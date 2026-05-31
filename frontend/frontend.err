@@ -1,0 +1,63 @@
+[browser] ⨯ unhandledRejection: Error: Map container is already initialized.
+    at BrowseMap.useEffect (components/BrowseMap.tsx:34:21)
+  32 |       }
+  33 |
+> 34 |       const map = L.map(containerRef.current!, { scrollWheelZoom: true }).setView(center, ...
+     |                     ^
+  35 |       mapRef.current = map;
+  36 |
+  37 |       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+[browser] ⨯ unhandledRejection: Error: Map container is already initialized.
+    at HostelMap.useEffect (components/HostelMap.tsx:28:21)
+  26 |       });
+  27 |
+> 28 |       const map = L.map(containerRef.current!, { scrollWheelZoom: false }).setView([lat, l...
+     |                     ^
+  29 |       mapRef.current = map;
+  30 |
+  31 |       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+[browser] ⨯ unhandledRejection: Error: Map container is already initialized.
+    at BrowseMap.useEffect (components/BrowseMap.tsx:34:21)
+  32 |       }
+  33 |
+> 34 |       const map = L.map(containerRef.current!, { scrollWheelZoom: true }).setView(center, ...
+     |                     ^
+  35 |       mapRef.current = map;
+  36 |
+  37 |       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+[browser] ⨯ unhandledRejection: Error: Map container is already initialized.
+    at HostelMap.useEffect (components/HostelMap.tsx:28:21)
+  26 |       });
+  27 |
+> 28 |       const map = L.map(containerRef.current!, { scrollWheelZoom: false }).setView([lat, l...
+     |                     ^
+  29 |       mapRef.current = map;
+  30 |
+  31 |       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+[browser] ⨯ unhandledRejection: Error: Map container is already initialized.
+    at BrowseMap.useEffect (components/BrowseMap.tsx:34:21)
+  32 |       }
+  33 |
+> 34 |       const map = L.map(containerRef.current!, { scrollWheelZoom: true }).setView(center, ...
+     |                     ^
+  35 |       mapRef.current = map;
+  36 |
+  37 |       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+[browser] ⨯ unhandledRejection: Error: Map container is already initialized.
+    at HostelMap.useEffect (components/HostelMap.tsx:28:21)
+  26 |       });
+  27 |
+> 28 |       const map = L.map(containerRef.current!, { scrollWheelZoom: false }).setView([lat, l...
+     |                     ^
+  29 |       mapRef.current = map;
+  30 |
+  31 |       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+[browser] ⨯ unhandledRejection: Error: Map container is already initialized.
+    at HostelMap.useEffect (components/HostelMap.tsx:28:21)
+  26 |       });
+  27 |
+> 28 |       const map = L.map(containerRef.current!, { scrollWheelZoom: false }).setView([lat, l...
+     |                     ^
+  29 |       mapRef.current = map;
+  30 |
+  31 |       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {

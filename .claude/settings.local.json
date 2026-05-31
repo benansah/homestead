@@ -1,0 +1,8 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(Get-ChildItem *)",
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\benedict\\\\homestead\\\\backend\" -Exclude \"node_modules\", \".git\" -Recurse -Force | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\benedict\\\\homestead\\\\\", \"\"\\) } | Sort-Object)"
+    ]
+  }
+}

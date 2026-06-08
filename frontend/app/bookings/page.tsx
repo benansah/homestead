@@ -2,386 +2,341 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/api';
 import {
   MapPin, Phone, Clock, CheckCircle2, XCircle,
-  AlertCircle, Loader2, Home, ChevronRight
+  AlertCircle, Loader2, Home, CalendarCheck,
+  UsersRound, Copy, Check, ArrowRight,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Booking, GroupBooking } from '../../types';
 import Link from 'next/link';
-import { UsersRound, Copy, Check } from 'lucide-react';
 
-const STATUS_CONFIG: Record<string, {
-  label: string;
-  color: string;
-  bg: string;
-  icon: React.ReactNode;
-  description: string;
-}> = {
-  pending: {
-    label: 'Pending',
-    color: '#B45309',
-    bg: '#FFF9EB',
-    icon: <Clock size={14} />,
-    description: 'Awaiting payment and admin confirmation',
-  },
-  confirmed: {
-    label: 'Confirmed',
-    color: '#1D4ED8',
-    bg: '#EFF6FF',
-    icon: <CheckCircle2 size={14} />,
-    description: 'Admin is confirming availability with landlord',
-  },
-  contact_released: {
-    label: 'Contact Released',
-    color: '#065F46',
-    bg: '#ECFDF5',
-    icon: <CheckCircle2 size={14} />,
-    description: 'Landlord contact shared — go for your viewing!',
-  },
-  cancelled: {
-    label: 'Cancelled',
-    color: '#9F1239',
-    bg: '#FFF1F2',
-    icon: <XCircle size={14} />,
-    description: 'This booking was cancelled',
-  },
-  completed: {
-    label: 'Completed',
-    color: '#065F46',
-    bg: '#ECFDF5',
-    icon: <CheckCircle2 size={14} />,
-    description: 'Viewing completed',
-  },
-  no_show: {
-    label: 'No Show',
-    color: '#6B7280',
-    bg: '#F9FAFB',
-    icon: <AlertCircle size={14} />,
-    description: 'You did not attend the viewing',
-  },
+type Status = 'pending' | 'confirmed' | 'contact_released' | 'cancelled' | 'completed' | 'no_show';
+
+const STATUS: Record<Status, { label: string; color: string; bg: string; border: string; icon: React.ReactNode; desc: string }> = {
+  pending:          { label: 'Awaiting payment',        color: '#B45309', bg: '#FFFBEB', border: '#FDE68A', icon: <Clock size={16} />,        desc: 'Complete your payment to confirm this booking' },
+  confirmed:        { label: 'Confirmed — under review', color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE', icon: <CheckCircle2 size={16} />, desc: 'Admin is confirming availability with the landlord' },
+  contact_released: { label: 'Contact released!',        color: '#059669', bg: '#ECFDF5', border: '#6EE7B7', icon: <CheckCircle2 size={16} />, desc: 'Call the landlord to schedule your viewing' },
+  cancelled:        { label: 'Cancelled',                color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5', icon: <XCircle size={16} />,      desc: 'This booking was cancelled' },
+  completed:        { label: 'Completed',                color: '#059669', bg: '#ECFDF5', border: '#6EE7B7', icon: <CheckCircle2 size={16} />, desc: 'Viewing completed' },
+  no_show:          { label: 'No show',                  color: '#6B7280', bg: '#F9FAFB', border: '#E5E7EB', icon: <AlertCircle size={16} />,  desc: 'You did not attend the viewing' },
 };
+
+const TIMELINE_STEPS = ['Paid', 'Verified', 'Contact Released', 'Moved In'];
+const STATUS_STEP: Record<string, number> = {
+  pending: 1, confirmed: 2, contact_released: 3, completed: 4,
+};
+
+function BookingTimeline({ status }: { status: string }) {
+  const step = STATUS_STEP[status] ?? 1;
+  return (
+    <div style={{ display: 'flex', alignItems: 'center', gap: 0, marginBottom: 20 }}>
+      {TIMELINE_STEPS.map((label, i) => {
+        const n = i + 1;
+        const done = n < step;
+        const active = n === step;
+        return (
+          <div key={label} style={{ display: 'flex', alignItems: 'center', flex: i < TIMELINE_STEPS.length - 1 ? 1 : undefined }}>
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 5 }}>
+              <div style={{
+                width: 28, height: 28, borderRadius: '50%', display: 'flex', alignItems: 'center', justifyContent: 'center',
+                fontSize: 12, fontWeight: 800, border: `2px solid ${done || active ? 'var(--blue)' : 'var(--border)'}`,
+                background: done ? 'var(--blue)' : active ? 'white' : 'var(--surface)',
+                color: done ? 'white' : active ? 'var(--blue)' : '#94A3B8',
+                flexShrink: 0,
+              }}>
+                {done ? '✓' : n}
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 600, color: done || active ? 'var(--blue)' : '#94A3B8', whiteSpace: 'nowrap', textAlign: 'center' }}>
+                {label}
+              </span>
+            </div>
+            {i < TIMELINE_STEPS.length - 1 && (
+              <div style={{ flex: 1, height: 2, background: n < step ? 'var(--blue)' : 'var(--border)', margin: '0 4px', marginBottom: 18 }} />
+            )}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+const TABS = [
+  { key: 'all',    label: 'All bookings' },
+  { key: 'active', label: 'Active' },
+  { key: 'past',   label: 'Past' },
+  { key: 'groups', label: 'Groups' },
+] as const;
+type TabKey = typeof TABS[number]['key'];
 
 export default function BookingsPage() {
   const { user, loading: authLoading } = useAuth();
   const router = useRouter();
-  const [bookings, setBookings]       = useState<Booking[]>([]);
+  const [bookings,      setBookings]      = useState<Booking[]>([]);
   const [groupBookings, setGroupBookings] = useState<GroupBooking[]>([]);
-  const [loading, setLoading]         = useState(true);
-  const [activeTab, setActiveTab]     = useState<'all' | 'active' | 'past' | 'groups'>('all');
-  const [copiedId, setCopiedId]       = useState<number | null>(null);
+  const [loading,  setLoading]  = useState(true);
+  const [tab,      setTab]      = useState<TabKey>('all');
+  const [copiedId, setCopiedId] = useState<number | null>(null);
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      router.push('/login');
-      return;
-    }
-    const load = async () => {
-      try {
-        setLoading(true);
-        const [soloRes, groupRes] = await Promise.all([
-          api.get('/bookings/my-bookings'),
-          api.get('/bookings/group/my'),
-        ]);
-        setBookings(soloRes.data);
-        setGroupBookings(groupRes.data);
-      } catch {
-        toast.error('Failed to load bookings');
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (user) load();
-  }, [user, authLoading]);
+    if (authLoading) return;
+    if (!user) { router.push('/login'); return; }
+    Promise.all([api.get('/bookings/my-bookings'), api.get('/bookings/group/my')])
+      .then(([s, g]) => { setBookings(s.data); setGroupBookings(g.data); })
+      .catch(() => toast.error('Failed to load bookings'))
+      .finally(() => setLoading(false));
+  }, [user, authLoading, router]);
 
   const filtered = bookings.filter(b => {
-    if (activeTab === 'active') return ['pending', 'confirmed', 'contact_released'].includes(b.booking_status);
-    if (activeTab === 'past') return ['cancelled', 'completed', 'no_show'].includes(b.booking_status);
+    if (tab === 'active') return ['pending', 'confirmed', 'contact_released'].includes(b.booking_status);
+    if (tab === 'past')   return ['cancelled', 'completed', 'no_show'].includes(b.booking_status);
     return true;
   });
+  const activeCount = bookings.filter(b => ['pending', 'confirmed', 'contact_released'].includes(b.booking_status)).length;
+  const totalSpent  = bookings.filter(b => b.payment_ref).length * 50;
 
-  const activeCount = bookings.filter(b =>
-    ['pending', 'confirmed', 'contact_released'].includes(b.booking_status)
-  ).length;
+  const copyCode = (id: number) => {
+    navigator.clipboard.writeText(String(id));
+    setCopiedId(id);
+    setTimeout(() => setCopiedId(null), 2000);
+  };
+
+  /* ── Shared styles ─────────────────────────────── */
+  const card: React.CSSProperties = { background: 'white', borderRadius: 20, border: '1px solid var(--border)', overflow: 'hidden', boxShadow: 'var(--sh-sm)' };
+
+  /* ── Empty state ─────────────────────────────────── */
+  const Empty = ({ icon, title, sub }: { icon: React.ReactNode; title: string; sub: string }) => (
+    <div style={{ ...card, padding: '72px 40px', textAlign: 'center', maxWidth: 480, margin: '0 auto' }}>
+      <div style={{ width: 88, height: 88, borderRadius: '50%', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px' }}>
+        {icon}
+      </div>
+      <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', marginBottom: 10 }}>{title}</h3>
+      <p style={{ fontSize: 16, color: '#64748B', marginBottom: 32, lineHeight: 1.7 }}>{sub}</p>
+      <Link href="/hostels"
+        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', background: 'var(--blue)', color: 'white', borderRadius: 12, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+        Browse hostels <ArrowRight size={16} />
+      </Link>
+    </div>
+  );
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
       <Navbar />
 
-      <div className="max-w-4xl mx-auto px-4 py-8">
-
-        {/* Header */}
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-gray-900">My Bookings</h1>
-          <p className="text-sm text-gray-500 mt-1">
-            Track your viewing requests and landlord contacts
-          </p>
-        </div>
-
-        {/* Summary cards */}
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          {[
-            { label: 'Total bookings', value: bookings.length, color: '#1D4ED8', bg: '#EFF6FF' },
-            { label: 'Active',         value: activeCount,      color: '#065F46', bg: '#ECFDF5' },
-            { label: 'Total spent',
-              value: `GHS ${bookings.filter(b => b.payment_ref).length * 50}`,
-              color: '#6B21A8', bg: '#F5F3FF' },
-          ].map(({ label, value, color, bg }) => (
-            <div key={label} className="bg-white rounded-xl p-4 text-center"
-              style={{ border: '1px solid var(--border)' }}>
-              <p className="text-2xl font-bold" style={{ color }}>{value}</p>
-              <p className="text-xs text-gray-500 mt-1">{label}</p>
+      {/* ── Header ── */}
+      <div className="r-bookings-header" style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '40px 32px 0' }}>
+        <div style={{ maxWidth: 960, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 28 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--blue-light)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <CalendarCheck size={26} style={{ color: 'var(--blue)' }} />
             </div>
-          ))}
-        </div>
+            <div>
+              <h1 style={{ fontSize: 32, fontWeight: 900, color: '#0F172A', letterSpacing: '-1px' }}>My Bookings</h1>
+              <p style={{ fontSize: 16, color: '#64748B', marginTop: 2 }}>Track your viewing requests and landlord contacts</p>
+            </div>
+          </div>
 
-        {/* Tabs */}
-        <div className="flex gap-1 mb-5 bg-gray-100 rounded-xl p-1 w-fit">
-          {([
-            { key: 'all', label: 'All' },
-            { key: 'active', label: 'Active' },
-            { key: 'past', label: 'Past' },
-            { key: 'groups', label: `Groups${groupBookings.length > 0 ? ` (${groupBookings.length})` : ''}` },
-          ] as const).map(tab => (
-            <button key={tab.key}
-              onClick={() => setActiveTab(tab.key)}
-              className="px-4 py-2 rounded-lg text-sm font-medium transition-all capitalize"
-              style={{
-                background: activeTab === tab.key ? '#fff' : 'transparent',
-                color: activeTab === tab.key ? 'var(--text)' : '#6B7280',
-                boxShadow: activeTab === tab.key ? '0 1px 3px rgba(0,0,0,0.1)' : 'none',
-              }}>
-              {tab.label}
-              {tab.key === 'active' && activeCount > 0 && (
-                <span className="ml-1.5 text-xs font-bold px-1.5 py-0.5 rounded-full text-white"
-                  style={{ background: 'var(--blue)' }}>
-                  {activeCount}
-                </span>
-              )}
-            </button>
-          ))}
-        </div>
+          {/* Stats */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 16, marginBottom: 28 }}>
+            {[
+              { label: 'Total bookings', value: bookings.length,            color: '#1D4ED8', bg: '#EFF6FF' },
+              { label: 'Active',         value: activeCount,                 color: '#059669', bg: '#ECFDF5' },
+              { label: 'Total spent',    value: `GHS ${totalSpent}`,         color: '#7C3AED', bg: '#F5F3FF' },
+            ].map(({ label, value, color, bg }) => (
+              <div key={label} style={{ background: bg, borderRadius: 16, padding: '20px 24px', textAlign: 'center', border: `1px solid ${bg}` }}>
+                <p style={{ fontSize: 30, fontWeight: 900, color, lineHeight: 1 }}>{value}</p>
+                <p style={{ fontSize: 14, color: '#64748B', marginTop: 6, fontWeight: 500 }}>{label}</p>
+              </div>
+            ))}
+          </div>
 
-        {/* Group bookings tab */}
-        {activeTab === 'groups' && (
-          <div className="space-y-4">
-            {loading ? (
-              <div className="flex items-center justify-center h-40">
-                <Loader2 size={28} className="animate-spin text-blue-500" />
-              </div>
-            ) : groupBookings.length === 0 ? (
-              <div className="text-center py-20 bg-white rounded-2xl"
-                style={{ border: '1px solid var(--border)' }}>
-                <UsersRound size={40} className="mx-auto text-gray-200 mb-3" />
-                <p className="font-semibold text-gray-600 mb-1">No group bookings yet</p>
-                <p className="text-sm text-gray-400 mb-5">
-                  Use "Book with friends" on any hostel to create one
-                </p>
-                <Link href="/"
-                  className="inline-block px-5 py-2.5 text-sm font-semibold text-white rounded-lg"
-                  style={{ background: 'var(--blue)' }}>
-                  Browse hostels
-                </Link>
-              </div>
-            ) : groupBookings.map(gb => {
-              const statusColor: Record<string, string> = { open: '#1D4ED8', full: '#065F46', cancelled: '#9F1239' };
-              const color = statusColor[gb.status] || '#6B7280';
-              return (
-                <div key={gb.id} className="bg-white rounded-2xl overflow-hidden"
-                  style={{ border: '1px solid var(--border)' }}>
-                  <div className="px-5 py-2.5 flex items-center justify-between"
-                    style={{ background: `${color}10`, borderBottom: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-2 text-sm font-semibold" style={{ color }}>
-                      <UsersRound size={14} />
-                      Group #{gb.id} · {gb.status.charAt(0).toUpperCase() + gb.status.slice(1)}
+          {/* Tabs */}
+          <div className="r-tabs-row" style={{ display: 'flex', gap: 0, borderTop: '1px solid var(--border)', marginTop: 4 }}>
+            {TABS.map(t => (
+              <button key={t.key} onClick={() => setTab(t.key)} className="r-tab"
+                style={{ padding: '14px 24px', fontSize: 15, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? 'var(--blue)' : '#64748B', background: 'none', border: 'none', cursor: 'pointer', borderBottom: `3px solid ${tab === t.key ? 'var(--blue)' : 'transparent'}`, transition: 'all 0.15s', marginBottom: -1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                {t.label}
+                {t.key === 'active' && activeCount > 0 && (
+                  <span style={{ background: 'var(--blue)', color: 'white', fontSize: 12, fontWeight: 800, padding: '2px 8px', borderRadius: 99 }}>{activeCount}</span>
+                )}
+                {t.key === 'groups' && groupBookings.length > 0 && (
+                  <span style={{ background: '#F3F4F6', color: '#374151', fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 99 }}>{groupBookings.length}</span>
+                )}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* ── Content ── */}
+      <div className="r-bookings-body" style={{ maxWidth: 960, margin: '0 auto', padding: '36px 32px 80px' }}>
+
+        {loading ? (
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
+            <Loader2 size={36} style={{ color: 'var(--blue)' }} className="animate-spin" />
+          </div>
+        ) : tab === 'groups' ? (
+          /* ── GROUP BOOKINGS ── */
+          groupBookings.length === 0 ? (
+            <Empty icon={<UsersRound size={40} style={{ color: '#D1D5DB' }} />}
+              title="No group bookings yet"
+              sub='Use "Book with friends" on any hostel listing to create a group viewing.' />
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+              {groupBookings.map(gb => {
+                const gc: Record<string, { color: string; bg: string; border: string }> = {
+                  open:      { color: '#1D4ED8', bg: '#EFF6FF', border: '#BFDBFE' },
+                  full:      { color: '#059669', bg: '#ECFDF5', border: '#6EE7B7' },
+                  cancelled: { color: '#DC2626', bg: '#FEF2F2', border: '#FCA5A5' },
+                };
+                const g = gc[gb.status] || gc.open;
+                const pct = ((gb.member_count ?? 0) / gb.max_members) * 100;
+                return (
+                  <div key={gb.id} style={card}>
+                    {/* Status banner */}
+                    <div style={{ padding: '14px 24px', background: g.bg, borderBottom: `1px solid ${g.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: g.color }}>
+                        <UsersRound size={17} />
+                        Group #{gb.id} · {gb.status.charAt(0).toUpperCase() + gb.status.slice(1)}
+                      </div>
+                      <span style={{ fontSize: 14, fontWeight: 600, color: g.color }}>{gb.member_count ?? 0} / {gb.max_members} members paid</span>
                     </div>
-                    <span className="text-xs" style={{ color }}>
-                      {gb.member_count ?? 0} / {gb.max_members} members
-                    </span>
+
+                    <div style={{ padding: '24px' }}>
+                      <h3 style={{ fontSize: 20, fontWeight: 800, color: '#0F172A', marginBottom: 6 }}>{gb.hostel_name}</h3>
+                      <p style={{ fontSize: 15, color: '#64748B', marginBottom: 20 }}>{gb.room_type} · GHS {Number(gb.price || 0).toLocaleString()}/yr</p>
+
+                      {/* Progress bar */}
+                      <div style={{ marginBottom: 20 }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 14, color: '#64748B', marginBottom: 8 }}>
+                          <span>Members joined</span>
+                          <span style={{ fontWeight: 700 }}>{gb.member_count ?? 0} of {gb.max_members}</span>
+                        </div>
+                        <div style={{ height: 10, background: '#F1F5F9', borderRadius: 99, overflow: 'hidden' }}>
+                          <div style={{ height: '100%', borderRadius: 99, background: g.color, width: `${pct}%`, transition: 'width 0.5s ease' }} />
+                        </div>
+                      </div>
+
+                      {/* Share code */}
+                      {gb.status === 'open' && (
+                        <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 20px', borderRadius: 14, background: 'var(--blue-light)', border: '1.5px solid var(--blue-mid)', marginBottom: 16 }}>
+                          <div>
+                            <p style={{ fontSize: 13, fontWeight: 700, color: '#1D4ED8', marginBottom: 4, textTransform: 'uppercase', letterSpacing: '0.06em' }}>Share this code with friends</p>
+                            <p style={{ fontSize: 28, fontWeight: 900, color: 'var(--blue)', fontFamily: 'monospace', letterSpacing: '0.1em' }}>#{gb.id}</p>
+                          </div>
+                          <button onClick={() => copyCode(gb.id)}
+                            style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '12px 20px', background: 'var(--blue)', color: 'white', borderRadius: 12, fontSize: 15, fontWeight: 700, border: 'none', cursor: 'pointer' }}>
+                            {copiedId === gb.id ? <><Check size={16} /> Copied!</> : <><Copy size={16} /> Copy</>}
+                          </button>
+                        </div>
+                      )}
+
+                      <p style={{ fontSize: 14, color: '#94A3B8' }}>
+                        My status: <span style={{ fontWeight: 700, color: '#374151', textTransform: 'capitalize' }}>{gb.my_status}</span>
+                      </p>
+                    </div>
                   </div>
-                  <div className="p-5">
-                    <h3 className="font-bold text-gray-900 mb-1">{gb.hostel_name}</h3>
-                    <p className="text-sm text-gray-500 mb-3">
-                      {gb.room_type} · GHS {Number(gb.price || 0).toLocaleString()}/yr
-                    </p>
+                );
+              })}
+            </div>
+          )
+        ) : filtered.length === 0 ? (
+          <Empty icon={<Home size={40} style={{ color: '#D1D5DB' }} />}
+            title="No bookings yet"
+            sub="Browse verified hostels near your university and book your first viewing." />
+        ) : (
+          /* ── SOLO BOOKINGS ── */
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 20 }}>
+            {filtered.map(booking => {
+              const s = STATUS[booking.booking_status as Status] || STATUS.pending;
+              return (
+                <div key={booking.id} style={card}>
 
-                    {/* Progress bar */}
-                    <div className="mb-4">
-                      <div className="flex justify-between text-xs text-gray-500 mb-1">
-                        <span>Members joined</span>
-                        <span>{gb.member_count ?? 0} of {gb.max_members}</span>
+                  {/* Status banner */}
+                  <div style={{ padding: '14px 24px', background: s.bg, borderBottom: `1px solid ${s.border}`, display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 8 }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: 8, fontSize: 15, fontWeight: 700, color: s.color }}>
+                      {s.icon} {s.label}
+                    </div>
+                    <p style={{ fontSize: 14, color: s.color, fontWeight: 500 }}>{s.desc}</p>
+                  </div>
+
+                  <div style={{ padding: '24px' }}>
+                    <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: 16, flexWrap: 'wrap', marginBottom: 20 }}>
+                      <div>
+                        <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>{booking.hostel_name}</h3>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: 6, fontSize: 15, color: '#64748B' }}>
+                          <MapPin size={15} style={{ flexShrink: 0 }} />
+                          {booking.hostel_address}
+                        </div>
                       </div>
-                      <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                        <div className="h-full rounded-full transition-all"
-                          style={{
-                            width: `${((gb.member_count ?? 0) / gb.max_members) * 100}%`,
-                            background: 'var(--blue)',
-                          }} />
+                      <div style={{ textAlign: 'right', flexShrink: 0 }}>
+                        <p style={{ fontSize: 13, color: '#94A3B8', fontWeight: 500 }}>Booking #{booking.id}</p>
+                        <p style={{ fontSize: 13, color: '#94A3B8', marginTop: 3 }}>
+                          {booking.booked_at ? new Date(booking.booked_at).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' }) : '—'}
+                        </p>
                       </div>
                     </div>
 
-                    {/* Share code */}
-                    {gb.status === 'open' && (
-                      <div className="flex items-center justify-between gap-3 p-3 rounded-xl mb-3"
-                        style={{ background: 'var(--blue-light)', border: '1px solid #BFDBFE' }}>
-                        <div>
-                          <p className="text-xs font-semibold text-blue-700 mb-0.5">Share this code with friends</p>
-                          <p className="text-lg font-black tracking-widest" style={{ color: 'var(--blue)' }}>
-                            #{gb.id}
+                    {/* Timeline — only for non-cancelled/no_show */}
+                    {!['cancelled', 'no_show'].includes(booking.booking_status) && (
+                      <BookingTimeline status={booking.booking_status} />
+                    )}
+
+                    {/* Detail chips */}
+                    <div className="r-chips-3" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12, marginBottom: 20 }}>
+                      {[
+                        { label: 'Room type',    value: booking.room_type || '—' },
+                        { label: 'Annual rent',  value: `GHS ${Number(booking.price || 0).toLocaleString()}` },
+                        { label: 'Viewing fee',  value: `GHS ${booking.viewing_fee || 50}` },
+                      ].map(({ label, value }) => (
+                        <div key={label} style={{ background: 'var(--surface)', borderRadius: 12, padding: '14px 16px', border: '1px solid var(--border)' }}>
+                          <p style={{ fontSize: 12, color: '#94A3B8', fontWeight: 600, textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>{label}</p>
+                          <p style={{ fontSize: 16, fontWeight: 700, color: '#0F172A' }}>{value}</p>
+                        </div>
+                      ))}
+                    </div>
+
+                    {/* Contact released — prominent */}
+                    {booking.booking_status === 'contact_released' && booking.landlord_phone && (
+                      <div style={{ background: '#ECFDF5', border: '1.5px solid #6EE7B7', borderRadius: 16, padding: '20px 24px', display: 'flex', alignItems: 'center', gap: 16, flexWrap: 'wrap' }}>
+                        <div style={{ width: 48, height: 48, borderRadius: '50%', background: '#D1FAE5', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+                          <Phone size={22} style={{ color: '#059669' }} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <p style={{ fontSize: 13, fontWeight: 700, color: '#065F46', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: 4 }}>Landlord contact released</p>
+                          <p style={{ fontSize: 20, fontWeight: 900, color: '#064E3B' }}>
+                            {booking.landlord_name} · {booking.landlord_phone}
                           </p>
                         </div>
-                        <button
-                          onClick={() => {
-                            navigator.clipboard.writeText(String(gb.id));
-                            setCopiedId(gb.id);
-                            setTimeout(() => setCopiedId(null), 2000);
-                          }}
-                          className="flex items-center gap-1.5 px-3 py-2 rounded-lg text-xs font-semibold text-white"
-                          style={{ background: 'var(--blue)' }}>
-                          {copiedId === gb.id ? <><Check size={12} /> Copied!</> : <><Copy size={12} /> Copy</>}
-                        </button>
+                        <a href={`tel:${booking.landlord_phone}`}
+                          style={{ display: 'flex', alignItems: 'center', gap: 8, padding: '14px 24px', background: '#059669', color: 'white', borderRadius: 12, fontWeight: 700, fontSize: 16, textDecoration: 'none', flexShrink: 0 }}>
+                          <Phone size={18} /> Call now
+                        </a>
                       </div>
                     )}
 
-                    <div className="text-xs text-gray-400">
-                      My status: <span className="font-semibold text-gray-600 capitalize">{gb.my_status}</span>
-                    </div>
+                    {/* Pending payment notice */}
+                    {booking.booking_status === 'pending' && !booking.payment_ref && (
+                      <div style={{ background: '#FFFBEB', border: '1px solid #FDE68A', borderRadius: 14, padding: '16px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, flexWrap: 'wrap' }}>
+                        <p style={{ fontSize: 15, color: '#92400E', fontWeight: 500 }}>Complete your payment to confirm this booking</p>
+                        <Link href="/"
+                          style={{ padding: '10px 20px', background: '#D97706', color: 'white', borderRadius: 10, fontWeight: 700, fontSize: 14, textDecoration: 'none' }}>
+                          Pay GHS 50
+                        </Link>
+                      </div>
+                    )}
                   </div>
                 </div>
               );
             })}
           </div>
         )}
-
-        {/* Solo booking list */}
-        {activeTab !== 'groups' && (loading ? (
-          <div className="flex items-center justify-center h-40">
-            <Loader2 size={28} className="animate-spin text-blue-500" />
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="text-center py-20 bg-white rounded-2xl"
-            style={{ border: '1px solid var(--border)' }}>
-            <Home size={40} className="mx-auto text-gray-200 mb-3" />
-            <p className="font-semibold text-gray-600 mb-1">No bookings yet</p>
-            <p className="text-sm text-gray-400 mb-5">
-              Find a hostel and book your first viewing
-            </p>
-            <Link href="/"
-              className="inline-block px-5 py-2.5 text-sm font-semibold text-white rounded-lg"
-              style={{ background: 'var(--blue)' }}>
-              Browse hostels
-            </Link>
-          </div>
-        ) : (
-          <div className="space-y-4">
-            {filtered.map(booking => {
-              const cfg = STATUS_CONFIG[booking.booking_status] || STATUS_CONFIG.pending;
-              return (
-                <div key={booking.id} className="bg-white rounded-2xl overflow-hidden"
-                  style={{ border: '1px solid var(--border)' }}>
-
-                  {/* Status bar */}
-                  <div className="px-5 py-2.5 flex items-center justify-between"
-                    style={{ background: cfg.bg, borderBottom: '1px solid var(--border)' }}>
-                    <div className="flex items-center gap-2 text-sm font-semibold"
-                      style={{ color: cfg.color }}>
-                      {cfg.icon}
-                      {cfg.label}
-                    </div>
-                    <p className="text-xs" style={{ color: cfg.color }}>{cfg.description}</p>
-                  </div>
-
-                  <div className="p-5">
-                    <div className="flex items-start justify-between gap-4">
-                      <div className="flex-1">
-                        {/* Hostel name */}
-                        <h3 className="font-bold text-gray-900 text-base mb-1">
-                          {booking.hostel_name}
-                        </h3>
-
-                        {/* Address */}
-                        <div className="flex items-center gap-1 text-sm text-gray-500 mb-3">
-                          <MapPin size={13} />
-                          {booking.hostel_address}
-                        </div>
-
-                        {/* Room details */}
-                        <div className="grid grid-cols-3 gap-3 mb-3">
-                          {[
-                            { label: 'Room type',    value: booking.room_type || '—' },
-                            { label: 'Annual price', value: `GHS ${Number(booking.price || 0).toLocaleString()}` },
-                            { label: 'Viewing fee',  value: `GHS ${booking.viewing_fee || 50}` },
-                          ].map(({ label, value }) => (
-                            <div key={label} className="rounded-lg p-2.5"
-                              style={{ background: '#F8F9FA', border: '1px solid var(--border)' }}>
-                              <p className="text-xs text-gray-400 mb-0.5">{label}</p>
-                              <p className="text-sm font-semibold text-gray-800">{value}</p>
-                            </div>
-                          ))}
-                        </div>
-
-                        {/* Landlord contact — only when released */}
-                        {booking.booking_status === 'contact_released' && booking.landlord_phone && (
-                          <div className="flex items-center gap-3 p-3 rounded-xl mt-2"
-                            style={{ background: '#ECFDF5', border: '1px solid #A7F3D0' }}>
-                            <div className="w-9 h-9 rounded-full flex items-center justify-center"
-                              style={{ background: '#D1FAE5' }}>
-                              <Phone size={16} style={{ color: '#065F46' }} />
-                            </div>
-                            <div>
-                              <p className="text-xs text-green-700 font-semibold">
-                                Landlord contact released
-                              </p>
-                              <p className="text-sm font-bold text-green-900">
-                                {booking.landlord_name} · {booking.landlord_phone}
-                              </p>
-                            </div>
-                            <a href={`tel:${booking.landlord_phone}`}
-                              className="ml-auto px-3 py-1.5 text-xs font-semibold rounded-lg text-white"
-                              style={{ background: '#065F46' }}>
-                              Call
-                            </a>
-                          </div>
-                        )}
-
-                        {/* Payment pending message */}
-                        {booking.booking_status === 'pending' && !booking.payment_ref && (
-                          <div className="flex items-center justify-between p-3 rounded-xl mt-2"
-                            style={{ background: '#FFF9EB', border: '1px solid #FDE68A' }}>
-                            <p className="text-xs text-amber-700">
-                              Complete your payment to confirm this booking
-                            </p>
-                            <Link
-                              href={`/api/bookings/retry/${booking.id}`}
-                              className="text-xs font-bold px-3 py-1.5 rounded-lg text-white"
-                              style={{ background: '#B45309' }}>
-                              Pay now
-                            </Link>
-                          </div>
-                        )}
-                      </div>
-
-                      {/* Booking ID + date */}
-                      <div className="text-right shrink-0">
-                        <p className="text-xs text-gray-400">Booking #{booking.id}</p>
-                        <p className="text-xs text-gray-400 mt-0.5">
-                          {booking.booked_at
-                            ? new Date(booking.booked_at).toLocaleDateString('en-GB', {
-                                day: 'numeric', month: 'short', year: 'numeric'
-                              })
-                            : '—'}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        ))}
       </div>
+
+      <Footer />
     </div>
   );
 }

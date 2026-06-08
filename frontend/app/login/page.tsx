@@ -26,10 +26,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!form.email || !form.password) {
-      toast.error('Please fill in all fields');
-      return;
-    }
+    if (!form.email || !form.password) { toast.error('Please fill in all fields'); return; }
     try {
       setLoading(true);
       await login(form.email, form.password);
@@ -41,108 +38,86 @@ export default function LoginPage() {
     }
   };
 
+  const inp: React.CSSProperties = { width: '100%', border: '1.5px solid var(--border)', borderRadius: 12, padding: '14px 16px', fontSize: 16, color: 'var(--text)', fontFamily: 'inherit', outline: 'none', transition: 'border-color 0.15s' };
+
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center px-4 py-12">
-      <div className="w-full max-w-md">
+    <div style={{ minHeight: '100vh', background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 'clamp(24px, 5vw, 40px) 16px' }}>
+      <div style={{ width: '100%', maxWidth: 460 }}>
 
         {/* Logo */}
-        <div className="text-center mb-8">
-          <Link href="/"
-            className="text-3xl font-black"
-            style={{ color: 'var(--blue)', fontFamily: 'Georgia, serif' }}>
-            hostelGH
+        <div style={{ textAlign: 'center', marginBottom: 36 }}>
+          <Link href="/" style={{ textDecoration: 'none' }}>
+            <span style={{ fontSize: 32, fontWeight: 900, color: 'var(--blue)', fontFamily: 'Georgia,serif', letterSpacing: '-1px' }}>
+              Homestead
+            </span>
           </Link>
-          <p className="text-gray-500 text-sm mt-2">Sign in to your account</p>
+          <p style={{ fontSize: 17, color: '#64748B', marginTop: 8 }}>Sign in to your account</p>
         </div>
 
         {/* Card */}
-        <div className="bg-white rounded-2xl p-8 shadow-sm"
-          style={{ border: '1px solid var(--border)' }}>
+        <div style={{ background: 'white', borderRadius: 24, padding: 'clamp(24px, 5vw, 40px) clamp(20px, 5vw, 36px)', boxShadow: 'var(--sh-md)', border: '1px solid var(--border)' }}>
+          <h1 style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', marginBottom: 28 }}>Welcome back</h1>
 
-          <h1 className="text-xl font-bold text-gray-900 mb-6">Welcome back</h1>
-
-          <form onSubmit={handleSubmit} className="space-y-4">
-
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: 18 }}>
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Email address
-              </label>
-              <input
-                type="email"
-                value={form.email}
-                onChange={e => setForm({ ...form, email: e.target.value })}
-                placeholder="you@university.edu.gh"
-                className="w-full border rounded-lg px-4 py-3 text-sm outline-none
-                           focus:border-blue-500 transition-colors"
-                style={{ borderColor: 'var(--border)' }}
-              />
+              <label style={{ display: 'block', fontSize: 15, fontWeight: 600, color: '#334155', marginBottom: 8 }}>Email address</label>
+              <input type="email" value={form.email} onChange={e => setForm({ ...form, email: e.target.value })}
+                placeholder="you@university.edu.gh" style={inp}
+                onFocus={e => (e.target.style.borderColor = 'var(--blue)')}
+                onBlur={e => (e.target.style.borderColor = 'var(--border)')} />
             </div>
 
             <div>
-              <div className="flex items-center justify-between mb-1">
-                <label className="text-sm font-medium text-gray-700">Password</label>
-                <Link href="/forgot-password" className="text-xs font-medium" style={{ color: 'var(--blue)' }}>
-                  Forgot password?
-                </Link>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 }}>
+                <label style={{ fontSize: 15, fontWeight: 600, color: '#334155' }}>Password</label>
+                <Link href="/forgot-password" style={{ fontSize: 14, fontWeight: 600, color: 'var(--blue)', textDecoration: 'none' }}>Forgot password?</Link>
               </div>
-              <div className="relative">
-                <input
-                  type={showPwd ? 'text' : 'password'}
-                  value={form.password}
+              <div style={{ position: 'relative' }}>
+                <input type={showPwd ? 'text' : 'password'} value={form.password}
                   onChange={e => setForm({ ...form, password: e.target.value })}
-                  placeholder="••••••••"
-                  className="w-full border rounded-lg px-4 py-3 text-sm outline-none
-                             focus:border-blue-500 transition-colors pr-10"
-                  style={{ borderColor: 'var(--border)' }}
-                />
-                <button type="button"
-                  onClick={() => setShowPwd(!showPwd)}
-                  className="absolute right-3 top-3.5 text-gray-400 hover:text-gray-600">
-                  {showPwd ? <EyeOff size={16} /> : <Eye size={16} />}
+                  placeholder="••••••••" style={{ ...inp, paddingRight: 48 }}
+                  onFocus={e => (e.target.style.borderColor = 'var(--blue)')}
+                  onBlur={e => (e.target.style.borderColor = 'var(--border)')} />
+                <button type="button" onClick={() => setShowPwd(!showPwd)}
+                  style={{ position: 'absolute', right: 14, top: '50%', transform: 'translateY(-50%)', background: 'none', border: 'none', cursor: 'pointer', color: '#94A3B8' }}>
+                  {showPwd ? <EyeOff size={18} /> : <Eye size={18} />}
                 </button>
               </div>
             </div>
 
-            <button
-              type="submit"
-              disabled={loading}
-              className="w-full py-3 rounded-lg text-white font-semibold text-sm
-                         hover:opacity-90 transition-opacity disabled:opacity-60
-                         flex items-center justify-center gap-2"
-              style={{ background: 'var(--blue)' }}>
-              {loading && <Loader2 size={16} className="animate-spin" />}
-              {loading ? 'Signing in...' : 'Sign in'}
+            <button type="submit" disabled={loading}
+              style={{ width: '100%', padding: '16px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: loading ? 0.7 : 1, boxShadow: 'var(--sh-blue)', marginTop: 4 }}>
+              {loading && <Loader2 size={18} className="animate-spin" />}
+              {loading ? 'Signing in…' : 'Sign in'}
             </button>
           </form>
 
           {/* Divider */}
-          <div className="flex items-center gap-3 my-5">
-            <hr className="flex-1" style={{ borderColor: 'var(--border)' }} />
-            <span className="text-xs text-gray-400">or</span>
-            <hr className="flex-1" style={{ borderColor: 'var(--border)' }} />
+          <div style={{ display: 'flex', alignItems: 'center', gap: 12, margin: '24px 0' }}>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
+            <span style={{ fontSize: 14, color: '#94A3B8', fontWeight: 500 }}>or</span>
+            <div style={{ flex: 1, height: 1, background: 'var(--border)' }} />
           </div>
 
-          {/* Google Sign-In */}
-          <div className="mb-5">
-            <GoogleSignInButton onCredential={handleGoogleCredential} text="signin_with" />
-          </div>
+          <GoogleSignInButton onCredential={handleGoogleCredential} text="signin_with" />
 
-          {/* Test credentials */}
-          <div className="rounded-lg p-3 text-xs text-gray-500 space-y-1"
-            style={{ background: '#F8F9FA', border: '1px solid var(--border)' }}>
-            <p className="font-semibold text-gray-700 mb-2">Test accounts</p>
-            <p>👤 Student: <span className="font-mono">kwame@ug.edu.gh</span></p>
-            <p>🏠 Landlord: <span className="font-mono">agyemang@gmail.com</span></p>
-            <p>⚙️ Admin: <span className="font-mono">admin@hostelgh.com</span></p>
-            <p className="text-gray-400 mt-1">All passwords: <span className="font-mono">password123</span></p>
+          {/* Test accounts */}
+          <div style={{ background: 'var(--surface)', borderRadius: 12, padding: '16px', marginTop: 24, border: '1px solid var(--border)' }}>
+            <p style={{ fontSize: 14, fontWeight: 700, color: '#334155', marginBottom: 10 }}>Test accounts</p>
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 5 }}>
+              {[['👤 Student', 'kwame@ug.edu.gh'], ['🏠 Landlord', 'agyemang@gmail.com'], ['⚙️ Admin', 'admin@Homestead.com']].map(([role, email]) => (
+                <p key={email as string} style={{ fontSize: 14, color: '#64748B' }}>
+                  {role}: <span style={{ fontFamily: 'monospace', fontWeight: 600 }}>{email}</span>
+                </p>
+              ))}
+              <p style={{ fontSize: 14, color: '#94A3B8', marginTop: 4 }}>All passwords: <span style={{ fontFamily: 'monospace' }}>password123</span></p>
+            </div>
           </div>
         </div>
 
-        <p className="text-center text-sm text-gray-500 mt-5">
-          Don't have an account?{' '}
-          <Link href="/register" className="font-semibold" style={{ color: 'var(--blue)' }}>
-            Join free
-          </Link>
+        <p style={{ textAlign: 'center', fontSize: 16, color: '#64748B', marginTop: 24 }}>
+          Don&apos;t have an account?{' '}
+          <Link href="/register" style={{ fontWeight: 700, color: 'var(--blue)', textDecoration: 'none' }}>Join free</Link>
         </p>
       </div>
     </div>

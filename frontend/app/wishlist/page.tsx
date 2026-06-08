@@ -2,98 +2,98 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Navbar from '../../components/Navbar';
+import Footer from '../../components/Footer';
 import HostelCard from '../../components/HostelCard';
 import { useAuth } from '../../context/AuthContext';
 import api from '../../lib/api';
-import { Heart, Loader2 } from 'lucide-react';
+import { Heart, Loader2, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Link from 'next/link';
 import { Hostel } from '../../types';
 
 export default function WishlistPage() {
   const { user, loading: authLoading } = useAuth();
-  const router = useRouter();
-  const [hostels, setHostels]   = useState<Hostel[]>([]);
-  const [loading, setLoading]   = useState(true);
+  const router  = useRouter();
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (!authLoading && !user) { router.push('/login'); return; }
-    const load = async () => {
-      try {
-        setLoading(true);
-        const res = await api.get('/wishlist');
-        setHostels(res.data.hostels || []);
-      } catch {
-        toast.error('Failed to load saved hostels');
-      } finally {
-        setLoading(false);
-      }
-    };
-    if (user) load();
-  }, [user, authLoading]);
+    if (authLoading) return;
+    if (!user) { router.push('/login'); return; }
+    api.get('/wishlist')
+      .then(r => setHostels(r.data.hostels || []))
+      .catch(() => toast.error('Failed to load saved hostels'))
+      .finally(() => setLoading(false));
+  }, [user, authLoading, router]);
 
-  const removeFromWishlist = async (hostelId: number) => {
+  const remove = async (hostelId: number) => {
     try {
       await api.delete(`/wishlist/${hostelId}`);
       setHostels(prev => prev.filter(h => h.id !== hostelId));
       toast.success('Removed from saved');
-    } catch {
-      toast.error('Failed to remove');
-    }
+    } catch { toast.error('Failed to remove'); }
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div style={{ minHeight: '100vh', background: 'var(--surface)' }}>
       <Navbar />
-      <div className="max-w-6xl mx-auto px-4 py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
-              <Heart size={22} style={{ color: 'var(--blue)' }} />
-              Saved hostels
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {hostels.length} saved hostel{hostels.length !== 1 ? 's' : ''}
-            </p>
+
+      {/* Page header */}
+      <div className="page-header" style={{ background: 'white', borderBottom: '1px solid var(--border)', padding: '40px 32px' }}>
+        <div style={{ maxWidth: 1200, margin: '0 auto' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
+            <div style={{ width: 52, height: 52, borderRadius: 14, background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+              <Heart size={26} fill="#EF4444" color="#EF4444" />
+            </div>
+            <div>
+              <h1 style={{ fontSize: 'clamp(22px,4vw,32px)', fontWeight: 900, color: '#0F172A', letterSpacing: '-1px' }}>Saved hostels</h1>
+              <p style={{ fontSize: 16, color: '#64748B', marginTop: 2 }}>
+                {loading ? '…' : `${hostels.length} hostel${hostels.length !== 1 ? 's' : ''} saved`}
+              </p>
+            </div>
           </div>
         </div>
+      </div>
 
+      <div className="page-content" style={{ maxWidth: 1200, margin: '0 auto', padding: '36px 32px 80px' }}>
         {loading ? (
-          <div className="flex items-center justify-center h-48">
-            <Loader2 size={28} className="animate-spin text-blue-500" />
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
+            <Loader2 size={36} style={{ color: 'var(--blue)' }} className="animate-spin" />
           </div>
         ) : hostels.length === 0 ? (
-          <div className="text-center py-24 bg-white rounded-2xl"
-            style={{ border: '1px solid var(--border)' }}>
-            <Heart size={48} className="mx-auto text-gray-200 mb-3" />
-            <p className="text-lg font-semibold text-gray-600 mb-2">No saved hostels</p>
-            <p className="text-sm text-gray-400 mb-6">
-              Click the heart on any hostel to save it here
+          /* ── Empty state ── */
+          <div style={{ background: 'white', borderRadius: 24, border: '1px solid var(--border)', padding: '80px 40px', textAlign: 'center', maxWidth: 520, margin: '0 auto', boxShadow: 'var(--sh-sm)' }}>
+            <div style={{ width: 96, height: 96, borderRadius: '50%', background: '#FEF2F2', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 28px' }}>
+              <Heart size={44} style={{ color: '#FECACA' }} />
+            </div>
+            <h2 style={{ fontSize: 26, fontWeight: 800, color: '#0F172A', marginBottom: 12 }}>No saved hostels yet</h2>
+            <p style={{ fontSize: 17, color: '#64748B', marginBottom: 36, lineHeight: 1.7 }}>
+              Tap the ❤️ heart on any hostel listing to save it here for later.
             </p>
-            <Link href="/"
-              className="inline-block px-5 py-2.5 text-sm font-semibold text-white rounded-xl"
-              style={{ background: 'var(--blue)' }}>
-              Browse hostels
+            <Link href="/hostels"
+              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '16px 32px', background: 'var(--blue)', color: 'white', borderRadius: 14, fontWeight: 700, fontSize: 17, textDecoration: 'none', boxShadow: 'var(--sh-blue)' }}>
+              Browse hostels →
             </Link>
           </div>
         ) : (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-5">
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 24 }}>
             {hostels.map(hostel => (
-              <div key={hostel.id} className="relative">
+              <div key={hostel.id} style={{ position: 'relative' }}>
                 <HostelCard hostel={hostel} />
-                <button
-                  onClick={() => removeFromWishlist(hostel.id)}
-                  className="absolute top-2 right-2 w-8 h-8 bg-white rounded-full
-                             flex items-center justify-center shadow-md z-10
-                             hover:bg-red-50 transition-colors"
-                  title="Remove from saved">
-                  <Heart size={15} fill="#EF4444" color="#EF4444" />
+                {/* Remove button */}
+                <button onClick={() => remove(hostel.id)}
+                  style={{ position: 'absolute', bottom: 20, right: 20, display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', background: 'white', border: '1.5px solid #FCA5A5', borderRadius: 10, fontSize: 13, fontWeight: 600, color: '#EF4444', cursor: 'pointer', boxShadow: 'var(--sh-sm)', zIndex: 10, transition: 'all 0.15s' }}
+                  onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = '#FEF2F2')}
+                  onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'white')}>
+                  <Trash2 size={14} /> Remove
                 </button>
               </div>
             ))}
           </div>
         )}
       </div>
+
+      <Footer />
     </div>
   );
 }

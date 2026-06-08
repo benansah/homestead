@@ -15,10 +15,10 @@ export default function HostelMap({ lat, lng, name, address }: Props) {
 
   useEffect(() => {
     if (!containerRef.current) return;
+    let destroyed = false;
 
     import('leaflet').then((L) => {
-      // Guard against React Strict Mode double-invoke and async race
-      if (!containerRef.current || (containerRef.current as any)._leaflet_id) return;
+      if (destroyed || !containerRef.current || (containerRef.current as any)._leaflet_id) return;
       // Fix broken default marker icons from webpack/turbopack
       (L.Icon.Default.prototype as any)._getIconUrl = undefined;
       L.Icon.Default.mergeOptions({
@@ -47,6 +47,7 @@ export default function HostelMap({ lat, lng, name, address }: Props) {
     });
 
     return () => {
+      destroyed = true;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;

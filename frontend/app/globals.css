@@ -1,44 +1,418 @@
-@import url('https://fonts.googleapis.com/css2?family=Nunito+Sans:wght@400;500;600;700&display=swap');
+@import "tailwindcss";
 
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+/* Tell Tailwind v4 exactly where to scan */
+@source "../app/**/*.{ts,tsx}";
+@source "../components/**/*.{ts,tsx}";
+@source "../context/**/*.{ts,tsx}";
+@source "../lib/**/*.{ts,tsx}";
 
+/* ── Tokens ─────────────────────────────────────────── */
 :root {
-  --blue: #006AFF;
-  --blue-hover: #0051CC;
-  --blue-light: #EBF2FF;
-  --text: #1A1A1A;
-  --text-muted: #767676;
-  --border: #E0E0E0;
+  --blue:        #006AFF;
+  --blue-dark:   #0057D9;
+  --blue-light:  #EBF3FF;
+  --blue-mid:    #BFDBFE;
+  --green:       #059669;
+  --amber:       #D97706;
+  --red:         #DC2626;
+  --text:        #111827;
+  --text-2:      #374151;
+  --text-muted:  #6B7280;
+  --border:      #E5E7EB;
+  --surface:     #F9FAFB;
+  --white:       #FFFFFF;
+  --sh-sm:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.04);
+  --sh-md:  0 4px 12px rgba(0,0,0,.08), 0 2px 4px rgba(0,0,0,.04);
+  --sh-lg:  0 12px 32px rgba(0,0,0,.10), 0 4px 8px rgba(0,0,0,.06);
+  --sh-xl:  0 24px 48px rgba(0,0,0,.12), 0 8px 16px rgba(0,0,0,.06);
+  --sh-blue: 0 4px 16px rgba(0,106,255,.40);
+  --r:  12px;
+  --r-lg: 16px;
+  --r-xl: 20px;
+  --r-2xl: 24px;
 }
 
-* { box-sizing: border-box; }
-
+/* ── Reset ──────────────────────────────────────────── */
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+html { -webkit-font-smoothing: antialiased; font-size: 18px; }
 body {
-  font-family: 'Nunito Sans', -apple-system, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-size: 18px;
   color: var(--text);
-  background: #fff;
+  background: var(--white);
+  line-height: 1.65;
 }
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+img { display: block; max-width: 100%; }
+button { cursor: pointer; border: none; background: none; font-family: inherit; }
+a { text-decoration: none; color: inherit; }
+input, select, textarea { font-family: inherit; }
 
-:root {
-  --blue: #006AFF;
-  --blue-dark: #0055CC;
-  --blue-light: #E8F0FF;
-  --text: #1A1A1A;
-  --text-secondary: #6B6B6B;
-  --border: #E5E5E5;
-  --card-shadow: 0 2px 8px rgba(0,0,0,0.08), 0 1px 2px rgba(0,0,0,0.04);
-  --card-shadow-hover: 0 8px 24px rgba(0,0,0,0.12), 0 2px 8px rgba(0,0,0,0.06);
+/* ── Scrollbar ──────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #D1D5DB; border-radius: 99px; }
+
+/* ── Selection ──────────────────────────────────────── */
+::selection { background: var(--blue-light); color: var(--blue); }
+
+/* ── Focus ──────────────────────────────────────────── */
+:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; border-radius: 4px; }
+
+/* ══════════════════════════════════════════════════════
+   DESIGN SYSTEM — these classes always work
+   regardless of Tailwind scan coverage
+═══════════════════════════════════════════════════════ */
+
+/* Buttons */
+.btn {
+  display: inline-flex; align-items: center; justify-content: center;
+  gap: 6px; font-weight: 600; font-size: 15px;
+  border-radius: var(--r); transition: all 0.15s ease;
+  white-space: nowrap; cursor: pointer;
+}
+.btn-primary {
+  background: var(--blue); color: white;
+  padding: 12px 22px; box-shadow: var(--sh-blue);
+}
+.btn-primary:hover { background: var(--blue-dark); transform: translateY(-1px); box-shadow: 0 6px 20px rgba(0,106,255,.45); }
+.btn-primary:active { transform: translateY(0); }
+
+.btn-secondary {
+  background: white; color: var(--text-2);
+  padding: 11px 22px; border: 1.5px solid var(--border);
+}
+.btn-secondary:hover { background: var(--surface); border-color: #D1D5DB; }
+
+.btn-ghost {
+  background: transparent; color: var(--text-muted);
+  padding: 9px 16px;
+}
+.btn-ghost:hover { background: var(--surface); color: var(--text); }
+
+.btn-sm { font-size: 14px; padding: 8px 16px; border-radius: 10px; }
+.btn-lg { font-size: 17px; padding: 15px 30px; border-radius: var(--r-lg); }
+.btn-icon { padding: 9px; border-radius: 10px; }
+
+/* Cards */
+.card {
+  background: white; border-radius: var(--r-xl);
+  border: 1px solid var(--border);
+  transition: box-shadow 0.2s ease, transform 0.2s ease;
+}
+.card-hover:hover {
+  box-shadow: var(--sh-lg);
+  transform: translateY(-2px);
 }
 
-* { box-sizing: border-box; }
+/* Badges */
+.badge {
+  display: inline-flex; align-items: center; gap: 4px;
+  font-size: 11px; font-weight: 700; letter-spacing: 0.02em;
+  padding: 3px 9px; border-radius: 99px;
+}
+.badge-blue   { background: var(--blue-light); color: var(--blue); }
+.badge-green  { background: #ECFDF5; color: var(--green); }
+.badge-amber  { background: #FFFBEB; color: var(--amber); }
+.badge-red    { background: #FEF2F2; color: var(--red); }
+.badge-gray   { background: var(--surface); color: var(--text-muted); }
 
-body {
-  font-family: 'Graphik', -apple-system, sans-serif;
-  color: var(--text);
-  background: #fff;
+/* Form inputs */
+.input {
+  width: 100%; border: 1.5px solid var(--border);
+  border-radius: var(--r); padding: 12px 16px;
+  font-size: 15px; color: var(--text); background: white;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+  outline: none;
+}
+.input:focus {
+  border-color: var(--blue);
+  box-shadow: 0 0 0 3px rgba(0,106,255,.12);
+}
+.input::placeholder { color: var(--text-muted); }
+
+/* Section headers */
+.section-title { font-size: 18px; font-weight: 700; color: var(--text); }
+
+/* Divider */
+.divider { border: none; border-top: 1px solid var(--border); }
+
+/* Avatar */
+.avatar {
+  border-radius: 50%; background: var(--blue); color: white;
+  display: flex; align-items: center; justify-content: center;
+  font-weight: 700; flex-shrink: 0;
+}
+
+/* Stat card */
+.stat-card {
+  background: white; border-radius: var(--r-lg); padding: 20px;
+  border: 1px solid var(--border);
+}
+
+/* Page wrapper */
+.page { min-height: 100vh; background: white; }
+
+/* Container */
+.container { max-width: 1280px; margin: 0 auto; padding: 0 16px; }
+.container-md { max-width: 960px; margin: 0 auto; padding: 0 16px; }
+.container-sm { max-width: 640px; margin: 0 auto; padding: 0 16px; }
+
+/* ═══════════════════════════════════════════════════════════
+   MOBILE-RESPONSIVE OVERRIDES
+   Uses !important to override inline styles at breakpoints.
+   Add these classNames to elements alongside inline styles.
+   ═══════════════════════════════════════════════════════════*/
+
+/* ── University ticker ─────────────────────────────────── */
+@keyframes ticker {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+.ticker-track {
+  display: flex;
+  width: max-content;
+  animation: ticker 22s linear infinite;
+  will-change: transform;
+}
+.ticker-track:hover { animation-play-state: paused; }
+.ticker-wrap {
+  overflow: hidden;
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+  mask-image:         linear-gradient(to right, transparent 0%, black 8%, black 92%, transparent 100%);
+}
+
+/* ── Trust badges: 2×2 on phones → single row wider ───── */
+@media (min-width: 480px) {
+  .sm-trust-row {
+    grid-template-columns: repeat(4, auto) !important;
+    gap: 6px 20px !important;
+  }
+}
+
+/* ── CTA buttons: side-by-side on wider phones ─────────── */
+@media (min-width: 400px) {
+  .cta-btns {
+    flex-direction: row !important;
+  }
+}
+
+/* ── Hero search card ─────────────────────────────────── */
+@media (max-width: 640px) {
+  .r-hero-search {
+    flex-direction: column !important;
+    padding: 0 !important;
+    border-radius: 16px !important;
+    overflow: hidden !important;
+  }
+  .r-hero-search > div {
+    border-right: none !important;
+    border-bottom: 1px solid var(--border) !important;
+    padding: 4px 16px !important;
+  }
+  .r-hero-search > button {
+    border-radius: 0 !important;
+    padding: 16px 24px !important;
+    width: 100% !important;
+  }
+}
+
+/* ── Stats bar: 4-col → 2×2 ──────────────────────────── */
+@media (max-width: 640px) {
+  .r-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+  .r-stats > div:nth-child(1),
+  .r-stats > div:nth-child(2) {
+    border-bottom: 1px solid rgba(255,255,255,0.15) !important;
+    padding-bottom: 16px !important;
+  }
+  .r-stats > div:nth-child(2),
+  .r-stats > div:nth-child(4) {
+    border-right: none !important;
+  }
+  .r-stats > div:nth-child(3) {
+    padding-top: 16px !important;
+  }
+}
+
+/* ── Column-collapse grids ─────────────────────────────── */
+@media (max-width: 768px) {
+  .r-3to1 { grid-template-columns: 1fr !important; gap: 20px !important; }
+  .r-2to1 { grid-template-columns: 1fr !important; gap: 28px !important; }
+  .r-connector { display: none !important; }
+}
+@media (max-width: 480px) {
+  .r-2col-to-1 { grid-template-columns: 1fr !important; gap: 12px !important; }
+}
+
+/* ── Footer grid: 5-col → 2-col → 1-col ──────────────── */
+@media (max-width: 768px) {
+  .r-footer-grid {
+    grid-template-columns: 1fr 1fr !important;
+    gap: 28px !important;
+    margin-bottom: 36px !important;
+  }
+  .r-footer-brand { grid-column: 1 / -1 !important; }
+}
+@media (max-width: 480px) {
+  .r-footer-grid { grid-template-columns: 1fr !important; gap: 20px !important; }
+}
+
+/* ── Bookings page ─────────────────────────────────────── */
+@media (max-width: 768px) {
+  .r-bookings-header { padding: 20px 16px 0 !important; }
+  .r-bookings-body   { padding: 20px 16px 60px !important; }
+  .r-tabs-row {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch !important;
+    scrollbar-width: none !important;
+  }
+  .r-tabs-row::-webkit-scrollbar { display: none !important; }
+  .r-tab {
+    flex-shrink: 0 !important;
+    padding: 12px 14px !important;
+    font-size: 14px !important;
+    white-space: nowrap !important;
+  }
+  .r-chips-3 { grid-template-columns: 1fr 1fr !important; }
+}
+@media (max-width: 480px) {
+  .r-chips-3 { grid-template-columns: 1fr !important; }
+}
+
+/* ── Hostel browse: hide price inputs in top search bar ─ */
+@media (max-width: 640px) {
+  .r-browse-price { display: none !important; }
+  .r-browse-search { border-radius: 12px !important; }
+}
+
+/* ── Hostel detail: gallery ────────────────────────────── */
+@media (max-width: 768px) {
+  .r-gallery {
+    grid-template-columns: 1fr !important;
+    grid-template-rows: 1fr !important;
+    height: 260px !important;
+  }
+  .r-gallery > div:not(:first-child) { display: none !important; }
+  .r-gallery > div:first-child { grid-row: auto !important; }
+  .r-detail-pad { padding: 20px 16px 80px !important; }
+  .r-detail-header { padding: 20px 16px 20px !important; }
+}
+
+/* ── Landlord / admin dashboard buttons ────────────────── */
+@media (max-width: 640px) {
+  .r-dash-btns { flex-wrap: wrap !important; gap: 8px !important; }
+  .r-dash-btns a, .r-dash-btns button { font-size: 13px !important; padding: 8px 14px !important; }
+}
+
+/* ── Admin layout: sidebar → top tab bar on mobile ─────── */
+@media (max-width: 768px) {
+  .admin-page-wrap  { flex-direction: column !important; }
+  .admin-page-main  { padding: 16px 16px 60px !important; }
+}
+
+/* ── Standard page header padding ──────────────────────── */
+@media (max-width: 768px) {
+  .page-header  { padding: 20px 16px !important; }
+  .page-header-0 { padding: 20px 16px 0 !important; }
+  .page-content { padding: 20px 16px 60px !important; }
+}
+
+/* ── About / Help / Terms hero ──────────────────────────── */
+@media (max-width: 768px) {
+  .static-hero   { padding: clamp(40px,8vw,80px) 20px clamp(36px,7vw,64px) !important; }
+  .static-hero h1 { font-size: clamp(28px,7vw,52px) !important; letter-spacing: -1px !important; }
+  .static-hero p  { font-size: clamp(15px,3vw,18px) !important; }
+  .static-hero span.emoji { font-size: clamp(40px,10vw,64px) !important; }
+  .static-section { padding: clamp(32px,6vw,72px) 20px !important; }
+  .static-section h2 { font-size: clamp(22px,4vw,36px) !important; }
+  .static-body-text { font-size: 15px !important; }
+  .static-content-pad { padding: clamp(28px,5vw,48px) 20px clamp(48px,8vw,96px) !important; }
+}
+
+/* ── FAQ accordion ─────────────────────────────────────── */
+@media (max-width: 640px) {
+  .faq-btn { padding: 16px 18px !important; }
+  .faq-btn span { font-size: 15px !important; }
+  .faq-body { padding: 14px 18px 18px !important; }
+  .faq-body p { font-size: 15px !important; }
+}
+
+/* ── Refund / Terms stats cards 3→1 ────────────────────── */
+@media (max-width: 640px) {
+  .r-refund-cards { grid-template-columns: 1fr !important; }
+}
+@media (max-width: 768px) {
+  .r-about-numbers { grid-template-columns: repeat(2,1fr) !important; }
+  .r-about-numbers > div:nth-child(2),
+  .r-about-numbers > div:nth-child(4) { border-right: none !important; }
+  .r-about-numbers > div:nth-child(1),
+  .r-about-numbers > div:nth-child(2) { border-bottom: 1px solid rgba(255,255,255,0.15) !important; }
+}
+
+/* ── Roommate profile: option picker 3→1 on mobile ─────── */
+@media (max-width: 640px) {
+  .option-picker-grid { grid-template-columns: 1fr !important; gap: 8px !important; }
+}
+
+/* ── Landlord list-room / admin create form padding ─────── */
+@media (max-width: 768px) {
+  .form-page-pad { padding: 20px 16px 60px !important; }
+}
+
+/* ── Shimmer loading skeleton ───────────────────────────── */
+@keyframes shimmer {
+  from { background-position: 200% 0; }
+  to   { background-position: -200% 0; }
+}
+.shimmer {
+  animation: shimmer 1.6s infinite;
+  background: linear-gradient(90deg, #F1F5F9 25%, #E2E8F0 50%, #F1F5F9 75%);
+  background-size: 200% 100%;
+}
+
+/* ── No-scrollbar horizontal scroll strip ───────────────── */
+.h-scroll { overflow-x: auto; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+.h-scroll::-webkit-scrollbar { display: none; }
+
+/* ── Hero right panel: hide on mobile ───────────────────── */
+@media (max-width: 768px) {
+  .r-hide-mobile { display: none !important; }
+}
+
+/* ── Hostel browse: toolbar chips strip ─────────────────── */
+@media (max-width: 640px) {
+  .r-toolbar-row { gap: 6px !important; }
+  .r-toolbar-sort { display: none !important; }
+}
+
+/* ── HostelCard image hover zoom ────────────────────────── */
+.hostel-img { transition: transform 0.5s ease; }
+a:hover .hostel-img { transform: scale(1.06); }
+
+/* ── Hostel detail: room cards ──────────────────────────── */
+@media (max-width: 640px) {
+  .r-room-card {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: 12px !important;
+  }
+  .r-room-card-right {
+    text-align: left !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    gap: 12px !important;
+  }
+  .r-room-btns {
+    flex-direction: row !important;
+    align-items: center !important;
+    gap: 6px !important;
+  }
+  .r-room-btns > button {
+    flex: 1 !important;
+    justify-content: center !important;
+    font-size: 12px !important;
+    padding: 8px 10px !important;
+  }
 }

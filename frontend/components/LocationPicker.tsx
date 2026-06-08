@@ -20,9 +20,10 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
   useEffect(() => {
     if (!containerRef.current) return;
     if ((containerRef.current as any)._leaflet_id) return;
+    let destroyed = false;
 
     import('leaflet').then((L) => {
-      if (!containerRef.current || (containerRef.current as any)._leaflet_id) return;
+      if (destroyed || !containerRef.current || (containerRef.current as any)._leaflet_id) return;
 
       (L.Icon.Default.prototype as any)._getIconUrl = undefined;
       L.Icon.Default.mergeOptions({
@@ -60,6 +61,7 @@ export default function LocationPicker({ lat, lng, onChange }: Props) {
     });
 
     return () => {
+      destroyed = true;
       if (mapRef.current) {
         mapRef.current.remove();
         mapRef.current = null;

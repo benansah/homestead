@@ -8,25 +8,19 @@ import { Plus, Trash2, Loader2, MapPin, ArrowLeft, Upload, X } from 'lucide-reac
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { useUniversities } from '../../../hooks/useUniversities';
 
 const LocationPicker = dynamic(() => import('../../../components/LocationPicker'), {
   ssr: false,
   loading: () => <div className="h-72 rounded-xl bg-gray-100 animate-pulse" />,
 });
 
-const UNIVERSITIES = [
-  'University of Ghana',
-  'KNUST',
-  'UCC',
-  'University of Education',
-  'Ashesi University',
-];
-
 interface RoomForm {
   room_type: string;
   price: string;
   gender_policy: string;
   quantity: string;
+  max_occupants: string;
 }
 
 const EMPTY_ROOM: RoomForm = {
@@ -34,10 +28,12 @@ const EMPTY_ROOM: RoomForm = {
   price: '',
   gender_policy: 'Both',
   quantity: '1',
+  max_occupants: '1',
 };
 
 export default function CreateHostel() {
   const router = useRouter();
+  const { universities } = useUniversities();
   const [step, setStep]       = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -119,8 +115,9 @@ export default function CreateHostel() {
       const rRes = await api.post(`/hostels/${hostelId}/rooms/bulk`, {
         rooms: rooms.map(r => ({
           ...r,
-          price:    parseFloat(r.price),
-          quantity: parseInt(r.quantity),
+          price:         parseFloat(r.price),
+          quantity:      parseInt(r.quantity),
+          max_occupants: parseInt(r.max_occupants) || 1,
         })),
       });
 
@@ -225,7 +222,7 @@ export default function CreateHostel() {
                     onChange={e => setH('university', e.target.value)}
                     className={inputClass} style={inputStyle}>
                     <option value="">Select university</option>
-                    {UNIVERSITIES.map(u => <option key={u} value={u}>{u}</option>)}
+                    {universities.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
                   </select>
                 </div>
 
@@ -359,6 +356,15 @@ export default function CreateHostel() {
                       </label>
                       <input type="number" min="1" value={room.quantity}
                         onChange={e => setRoom(i, 'quantity', e.target.value)}
+                        className={inputClass} style={inputStyle} />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                        Max occupants
+                      </label>
+                      <input type="number" min="1" value={room.max_occupants}
+                        onChange={e => setRoom(i, 'max_occupants', e.target.value)}
                         className={inputClass} style={inputStyle} />
                     </div>
 

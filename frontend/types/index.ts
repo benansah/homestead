@@ -5,6 +5,14 @@ export interface User {
   phone: string;
   university: string | null;
   role: 'student' | 'landlord' | 'admin';
+  email_marketing?: boolean;
+  created_at: string;
+}
+
+export interface University {
+  id: number;
+  name: string;
+  location: string | null;
   created_at: string;
 }
 
@@ -32,6 +40,8 @@ export interface Hostel {
   images?: string[];
   landlord_name?: string;
   landlord_phone?: string;
+  landlord_last_active?: string | null;
+  view_count?: number;
 }
 
 export interface Room {
@@ -41,8 +51,17 @@ export interface Room {
   price: number;
   gender_policy: 'Male' | 'Female' | 'Both';
   quantity: number;
+  max_occupants?: number;
   is_available: boolean;
   images?: string[];
+  tour_url?: string | null;
+  // joined fields (present when fetched via GET /api/rooms/:id)
+  hostel_name?: string;
+  hostel_address?: string;
+  university?: string;
+  landlord_id?: number;
+  landlord_name?: string;
+  is_verified?: boolean;
 }
 
 export interface Booking {

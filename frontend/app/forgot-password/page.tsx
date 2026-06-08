@@ -32,7 +32,7 @@ export default function ForgotPasswordPage() {
           <Link href="/"
             className="text-3xl font-black"
             style={{ color: 'var(--blue)', fontFamily: 'Georgia, serif' }}>
-            hostelGH
+            Homestead
           </Link>
         </div>
 

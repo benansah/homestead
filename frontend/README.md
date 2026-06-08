@@ -1,6 +1,9 @@
 This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
 
 ## Getting Started
+install nodejs
+open root folder and run "npm install"
+run "npm run dev" to start development server
 
 First, run the development server:
 

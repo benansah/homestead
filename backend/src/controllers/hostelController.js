@@ -3,6 +3,7 @@ import {
   sendListingApprovedEmail,
   sendListingRejectedEmail,
   sendWishlistAlertEmail,
+  sendNewMatchEmail,
 } from '../services/email.js';
 
 // GET all approved hostels (students browsing)
@@ -57,7 +58,7 @@ export const getHostelById = async (req, res) => {
     const { id } = req.params;
 
     const hostel = await pool.query(
-      `SELECT h.*, u.fullname AS landlord_name, u.phone AS landlord_phone
+      `SELECT h.*, u.fullname AS landlord_name, u.phone AS landlord_phone, u.last_active AS landlord_last_active
        FROM Hostels h
        JOIN Users u ON u.id = h.landlord_id
        WHERE h.id = $1`,
@@ -67,6 +68,9 @@ export const getHostelById = async (req, res) => {
     if (hostel.rows.length === 0) {
       return res.status(404).json({ message: 'Hostel not found' });
     }
+
+    // Increment view counter (fire-and-forget)
+    pool.query('UPDATE Hostels SET view_count = view_count + 1 WHERE id = $1', [id]).catch(() => {});
 
     // get rooms for this hostel
     const rooms = await pool.query(
@@ -89,10 +93,32 @@ export const getHostelById = async (req, res) => {
       [id]
     );
 
+    // similar hostels at the same university
+    const similar = await pool.query(
+      `SELECT h.id, h.hostel_name, h.hostel_address, h.university, h.is_verified,
+         h.latitude, h.longitude, h.status, h.track, h.landlord_id, h.created_at,
+         MIN(r.price) AS min_price, MAX(r.price) AS max_price,
+         COUNT(DISTINCT r.id) AS total_rooms,
+         COUNT(DISTINCT r.id) FILTER (WHERE r.is_available = true) AS available_rooms,
+         ROUND(AVG(rv.rating)::numeric, 1) AS avg_rating,
+         COUNT(DISTINCT rv.id) AS total_reviews,
+         ARRAY_AGG(DISTINCT ri.image_url) FILTER (WHERE ri.image_url IS NOT NULL) AS images
+       FROM Hostels h
+       LEFT JOIN Rooms r ON r.hostel_id = h.id
+       LEFT JOIN Room_images ri ON ri.room_id = r.id
+       LEFT JOIN Reviews rv ON rv.hostel_id = h.id
+       WHERE h.university = $1 AND h.id != $2 AND h.status = 'approved'
+       GROUP BY h.id
+       ORDER BY avg_rating DESC NULLS LAST
+       LIMIT 4`,
+      [hostel.rows[0].university, id]
+    );
+
     res.json({
       hostel: hostel.rows[0],
       rooms: rooms.rows,
       reviews: reviews.rows,
+      similar: similar.rows,
     });
   } catch (error) {
     console.log(error);
@@ -113,17 +139,23 @@ export const createHostel = async (req, res) => {
       track,
     } = req.body;
 
-    // landlord_id comes from the logged in user
-    const landlord_id = req.user.id;
+    // admin can specify a landlord_id; otherwise use the logged-in user
+    const landlord_id = (req.user.role === 'admin' && req.body.landlord_id)
+      ? req.body.landlord_id
+      : req.user.id;
+
+    // admin-created listings go straight to approved + verified
+    const status      = req.user.role === 'admin' ? 'approved' : 'pending';
+    const is_verified = req.user.role === 'admin';
 
     const newHostel = await pool.query(
       `INSERT INTO Hostels
         (landlord_id, hostel_name, hostel_address, university,
          description, latitude, longitude, status, is_verified, track)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,'pending',FALSE,$8)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
        RETURNING *`,
       [landlord_id, hostel_name, hostel_address, university,
-       description, latitude, longitude, track || 'A']
+       description, latitude, longitude, status, is_verified, track || 'A']
     );
 
     res.status(201).json({
@@ -168,15 +200,16 @@ export const updateHostelStatus = async (req, res) => {
           hostelId:   hostel.id,
         }).catch(console.error);
 
-        // notify wishlist users that this hostel is now live
+        // notify wishlist users that opted in to marketing emails
         const wishlistUsers = await pool.query(
-          `SELECT u.email, u.fullname
+          `SELECT u.email, u.fullname, u.email_marketing
            FROM Wishlists w
            JOIN Users u ON u.id = w.student_id
            WHERE w.hostel_id = $1`,
           [hostel.id]
         );
         for (const user of wishlistUsers.rows) {
+          if (user.email_marketing === false) continue;
           sendWishlistAlertEmail(user.email, user.fullname, {
             hostelName: hostel.hostel_name,
             hostelId:   hostel.id,
@@ -190,6 +223,24 @@ export const updateHostelStatus = async (req, res) => {
           hostelName: hostel.hostel_name,
           reason:     reason || '',
         }).catch(console.error);
+      }
+
+      if (status === 'approved') {
+        // notify students with matching saved searches
+        const savedSearchRes = await pool.query(
+          `SELECT ss.*, u.email, u.fullname
+           FROM Saved_searches ss
+           JOIN Users u ON u.id = ss.student_id
+           WHERE (ss.university IS NULL OR ss.university ILIKE $1)`,
+          [`%${hostel.university}%`]
+        );
+        for (const ss of savedSearchRes.rows) {
+          sendNewMatchEmail(ss.email, ss.fullname, {
+            hostelName: hostel.hostel_name,
+            hostelId:   hostel.id,
+            university: hostel.university,
+          }).catch(console.error);
+        }
       }
     }
 
@@ -226,12 +277,93 @@ export const toggleVerified = async (req, res) => {
   }
 };
 
-// DELETE hostel (admin only)
+// PUT update hostel (landlord or admin)
+export const updateHostel = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const hostelRes = await pool.query('SELECT landlord_id FROM Hostels WHERE id = $1', [id]);
+    if (hostelRes.rows.length === 0) return res.status(404).json({ message: 'Hostel not found' });
+    if (req.user.role !== 'admin' && hostelRes.rows[0].landlord_id !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorised' });
+    }
+
+    const allowed = ['hostel_name', 'hostel_address', 'university', 'description', 'latitude', 'longitude', 'track'];
+    const fields = []; const values = []; let idx = 1;
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) { fields.push(`${key} = $${idx++}`); values.push(req.body[key]); }
+    }
+    if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
+    values.push(id);
+    const result = await pool.query(
+      `UPDATE Hostels SET ${fields.join(', ')} WHERE id = $${idx} RETURNING *`, values
+    );
+    res.json({ message: 'Hostel updated', hostel: result.rows[0] });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// DELETE hostel (landlord owns it, or admin)
 export const deleteHostel = async (req, res) => {
   try {
     const { id } = req.params;
+    const hostelRes = await pool.query('SELECT landlord_id FROM Hostels WHERE id = $1', [id]);
+    if (hostelRes.rows.length === 0) return res.status(404).json({ message: 'Hostel not found' });
+    if (req.user.role !== 'admin' && hostelRes.rows[0].landlord_id !== req.user.id) {
+      return res.status(403).json({ message: 'Not authorised' });
+    }
     await pool.query('DELETE FROM Hostels WHERE id = $1', [id]);
     res.json({ message: 'Hostel deleted' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// POST /hostels/:id/flag — authenticated user reports a listing
+export const flagHostel = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { reason } = req.body;
+    if (!reason) return res.status(400).json({ message: 'Reason is required' });
+
+    await pool.query(
+      'INSERT INTO Listing_flags (hostel_id, reporter_id, reason) VALUES ($1, $2, $3)',
+      [id, req.user.id, reason]
+    );
+    res.json({ message: 'Listing reported. Our team will review it.' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GET /hostels/flagged — admin: see flagged listings with counts
+export const getFlaggedHostels = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT h.id, h.hostel_name, h.university, h.status,
+         COUNT(f.id) AS flag_count,
+         ARRAY_AGG(f.reason ORDER BY f.created_at DESC) AS reasons
+       FROM Hostels h
+       JOIN Listing_flags f ON f.hostel_id = h.id
+       GROUP BY h.id
+       ORDER BY flag_count DESC`
+    );
+    res.json(result.rows);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// DELETE /hostels/:id/flags — admin: dismiss all flags for a hostel
+export const dismissFlags = async (req, res) => {
+  try {
+    const { id } = req.params;
+    await pool.query('DELETE FROM Listing_flags WHERE hostel_id = $1', [id]);
+    res.json({ message: 'Flags dismissed' });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: 'Server error' });

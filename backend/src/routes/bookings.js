@@ -7,6 +7,9 @@ import {
   getMyBookings,
   getLandlordBookings,
   getAllBookings,
+  pingLandlord,
+  getAdminStats,
+  getLandlordCalendar,
 } from '../controllers/bookingController.js';
 import {
   createGroupBooking,
@@ -27,9 +30,11 @@ router.get('/verify/:reference', verifyBookingPayment);
 // Student — solo bookings
 router.post('/', authMiddleware, allowRoles('student'), validate(bookingSchema), initiateBooking);
 router.get('/my-bookings', authMiddleware, allowRoles('student'), getMyBookings);
+router.post('/ping', authMiddleware, allowRoles('student'), pingLandlord);
 
 // Landlord — bookings for their rooms
 router.get('/landlord', authMiddleware, allowRoles('landlord'), getLandlordBookings);
+router.get('/calendar', authMiddleware, allowRoles('landlord'), getLandlordCalendar);
 
 // Student — group bookings
 router.post('/group', authMiddleware, allowRoles('student'), validate(groupBookingSchema), createGroupBooking);
@@ -38,6 +43,7 @@ router.get('/group/:id', authMiddleware, allowRoles('student'), getGroupBooking)
 router.post('/group/:id/join', authMiddleware, allowRoles('student'), joinGroupBooking);
 
 // Admin
+router.get('/admin-stats', authMiddleware, allowRoles('admin'), getAdminStats);
 router.get('/', authMiddleware, allowRoles('admin'), getAllBookings);
 router.patch('/:id/release-contact', authMiddleware, allowRoles('admin'), releaseContact);
 router.patch('/:id/refund', authMiddleware, allowRoles('admin'), processRefund);

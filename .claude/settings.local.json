@@ -2,7 +2,8 @@
   "permissions": {
     "allow": [
       "Bash(Get-ChildItem *)",
-      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\benedict\\\\homestead\\\\backend\" -Exclude \"node_modules\", \".git\" -Recurse -Force | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\benedict\\\\homestead\\\\\", \"\"\\) } | Sort-Object)"
+      "PowerShell(Get-ChildItem -Path \"C:\\\\Users\\\\benedict\\\\homestead\\\\backend\" -Exclude \"node_modules\", \".git\" -Recurse -Force | Select-Object FullName | ForEach-Object { $_.FullName.Replace\\(\"C:\\\\Users\\\\benedict\\\\homestead\\\\\", \"\"\\) } | Sort-Object)",
+      "Bash(curl -s -X POST http://localhost:5001/api/users/login -H \"Content-Type: application/json\" -d \"{\\\\\"email\\\\\":\\\\\"kwame@ug.edu.gh\\\\\",\\\\\"password\\\\\":\\\\\"password123\\\\\"}\")"
     ]
   }
 }

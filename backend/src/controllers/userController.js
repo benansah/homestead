@@ -13,7 +13,8 @@ export const registerUser = async (req, res) => {
       password,
       phone,
       university,
-      role
+      role,
+      email_marketing,
     } = req.body;
 
     // check existing user
@@ -35,8 +36,8 @@ export const registerUser = async (req, res) => {
     // insert user
     const newUser = await pool.query(
       `INSERT INTO Users
-      (fullname, email, password_hash, phone, university, role)
-      VALUES ($1, $2, $3, $4, $5, $6)
+      (fullname, email, password_hash, phone, university, role, email_marketing)
+      VALUES ($1, $2, $3, $4, $5, $6, $7)
       RETURNING *`,
       [
         fullname,
@@ -44,7 +45,8 @@ export const registerUser = async (req, res) => {
         hashedPassword,
         phone,
         university,
-        role || 'student'
+        role || 'student',
+        email_marketing !== false,
       ]
     );
 
@@ -98,6 +100,9 @@ export const loginUser = async (req, res) => {
         expiresIn: '7d'
       }
     );
+
+    // Update last_active timestamp (fire-and-forget)
+    pool.query('UPDATE Users SET last_active = NOW() WHERE id = $1', [user.rows[0].id]).catch(() => {});
 
     res.json({
       token,
@@ -215,7 +220,7 @@ export const googleAuth = async (req, res) => {
 export const getAllUsers = async (req, res) => {
   try {
     const users = await pool.query(
-      'SELECT id, fullname, email, role FROM Users'
+      'SELECT id, fullname, email, phone, university, role, created_at FROM Users'
     );
 
     res.json(users.rows);
@@ -226,5 +231,71 @@ export const getAllUsers = async (req, res) => {
     res.status(500).json({
       message: 'Server error'
     });
+  }
+};
+
+export const getMe = async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, fullname, email, phone, university, role, email_marketing, created_at FROM Users WHERE id = $1',
+      [req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+    res.json(result.rows[0]);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const updateMe = async (req, res) => {
+  try {
+    const allowed = ['fullname', 'phone', 'university', 'email_marketing'];
+    const fields = []; const values = []; let idx = 1;
+    for (const key of allowed) {
+      if (req.body[key] !== undefined) { fields.push(`${key} = $${idx++}`); values.push(req.body[key]); }
+    }
+    if (fields.length === 0) return res.status(400).json({ message: 'No fields to update' });
+    values.push(req.user.id);
+    const result = await pool.query(
+      `UPDATE Users SET ${fields.join(', ')} WHERE id = $${idx}
+       RETURNING id, fullname, email, phone, university, role, email_marketing, created_at`,
+      values
+    );
+    res.json({ message: 'Profile updated', user: result.rows[0] });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const changeUserRole = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const { role } = req.body;
+    if (!['student', 'landlord', 'admin'].includes(role)) {
+      return res.status(400).json({ message: 'Invalid role' });
+    }
+    const result = await pool.query(
+      'UPDATE Users SET role = $1 WHERE id = $2 RETURNING id, fullname, role',
+      [role, id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'Role updated', user: result.rows[0] });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+export const deleteUser = async (req, res) => {
+  try {
+    const { id } = req.params;
+    const result = await pool.query('DELETE FROM Users WHERE id = $1 RETURNING id', [id]);
+    if (result.rows.length === 0) return res.status(404).json({ message: 'User not found' });
+    res.json({ message: 'User deleted' });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: 'Server error' });
   }
 };

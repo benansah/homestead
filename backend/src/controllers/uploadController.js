@@ -45,7 +45,7 @@ export const deleteRoomImage = async (req, res) => {
 
     // delete from cloudinary
     const urlParts  = image.rows[0].image_url.split('/');
-    const publicId  = `hostelgh/${urlParts[urlParts.length - 1].split('.')[0]}`;
+    const publicId  = `Homestead/${urlParts[urlParts.length - 1].split('.')[0]}`;
     const { default: cloudinary } = await import('../services/cloudinary.js');
     await cloudinary.uploader.destroy(publicId);
 

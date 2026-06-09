@@ -12,11 +12,15 @@ import wishlistRoutes from './routes/wishlistRoutes.js';
 import reviewRoutes from './routes/reviewRoutes.js';
 import referralRoutes from './routes/referralRoutes.js';
 import roommateRoutes from './routes/roommateRoutes.js';
+import universityRoutes from './routes/universityRoutes.js';
+import savedSearchRoutes from './routes/savedSearchRoutes.js';
+import { generalLimiter, authLimiter } from './middleware/rateLimiter.js';
+import { processEmailQueue } from './services/emailWorker.js';
 
 dotenv.config();
 
 const app = express();
-const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 5001;
 
 // ── Middleware ──────────────────────────────────────────────
 app.use(cors({
@@ -25,6 +29,7 @@ app.use(cors({
     : true,
   credentials: true,
 }));
+app.use(generalLimiter);
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
@@ -45,10 +50,13 @@ app.use('/api/wishlist', wishlistRoutes);
 app.use('/api/reviews', reviewRoutes);
 app.use('/api/referrals', referralRoutes);
 app.use('/api/roommates', roommateRoutes);
+app.use('/api/universities', universityRoutes);
+app.use('/api/saved-searches', savedSearchRoutes);
 
 // ── Start ────────────────────────────────────────────────────
 app.listen(PORT, () => {
   console.log(`✅ Server running on http://localhost:${PORT}`);
+  setInterval(processEmailQueue, 60_000);
 });
 
 export default app;

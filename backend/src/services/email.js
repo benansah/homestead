@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import pool from '../../database/db.js';
 
 const createTransport = () =>
   nodemailer.createTransport({
@@ -11,7 +12,7 @@ const createTransport = () =>
     },
   });
 
-const FROM = () => process.env.EMAIL_FROM || 'hostelGH <noreply@hostelgh.com>';
+const FROM = () => process.env.EMAIL_FROM || 'Homestead <noreply@homestead.com>';
 const FRONTEND = () => process.env.FRONTEND_URL || 'http://localhost:3000';
 
 // ── shared brand wrapper ─────────────────────────────────────────────────────
@@ -28,7 +29,7 @@ const wrap = (title, body) => `
         <tr>
           <td style="background:#006AFF;padding:24px 32px">
             <p style="margin:0;font-size:22px;font-weight:900;color:#fff;font-family:Georgia,serif">
-              hostelGH
+              Homestead
             </p>
             <p style="margin:4px 0 0;font-size:12px;color:rgba(255,255,255,0.75)">
               Ghana's student hostel finder
@@ -48,8 +49,8 @@ const wrap = (title, body) => `
         <tr>
           <td style="padding:16px 32px 24px;border-top:1px solid #F3F4F6">
             <p style="margin:0;font-size:11px;color:#9CA3AF">
-              © 2025 hostelGH · Ghana &nbsp;·&nbsp;
-              Questions? <a href="mailto:support@hostelgh.com" style="color:#006AFF">support@hostelgh.com</a>
+              © 2025 Homestead · Ghana &nbsp;·&nbsp;
+              Questions? <a href="mailto:support@homestead.com" style="color:#006AFF">support@homestead.com</a>
             </p>
           </td>
         </tr>
@@ -86,7 +87,7 @@ const send = async (to, subject, html) => {
 
 // ── 1. Welcome ───────────────────────────────────────────────────────────────
 export const sendWelcomeEmail = async (email, name) => {
-  const html = wrap('Welcome to hostelGH!', `
+  const html = wrap('Welcome to Homestead!', `
     <p style="color:#374151;font-size:14px;margin:0 0 4px">Hi ${name},</p>
     <p style="color:#374151;font-size:14px;margin:0 0 16px">
       You're now part of Ghana's easiest way to find student hostels.
@@ -97,7 +98,7 @@ export const sendWelcomeEmail = async (email, name) => {
       Viewing fee is only GHS 50 — refunded if the room is unavailable.
     </p>
   `);
-  await send(email, 'Welcome to hostelGH 🏠', html);
+  await send(email, 'Welcome to Homestead 🏠', html);
 };
 
 // ── 2. Payment confirmed (student) ───────────────────────────────────────────
@@ -232,7 +233,7 @@ export const sendListingRejectedEmail = async (email, landlordName, { hostelName
     </p>
     ${btn(`${FRONTEND()}/landlord`, 'Go to my dashboard')}
     <p style="font-size:12px;color:#9CA3AF;margin-top:16px">
-      Need help? Reply to this email or contact support@hostelgh.com
+      Need help? Reply to this email or contact support@homestead.com
     </p>
   `);
   await send(email, `Action needed — ${hostelName} listing update required`, html);
@@ -246,7 +247,7 @@ export const sendPasswordResetEmail = async (email, name, resetUrl) => {
   }
   const html = wrap('Reset your password', `
     <p style="color:#374151;font-size:14px;margin:0 0 16px">
-      Hi ${name}, we received a request to reset your hostelGH password.
+      Hi ${name}, we received a request to reset your Homestead password.
       This link expires in <strong>1 hour</strong>.
     </p>
     ${btn(resetUrl, 'Reset my password')}
@@ -254,7 +255,7 @@ export const sendPasswordResetEmail = async (email, name, resetUrl) => {
       If you didn't request this, you can safely ignore this email. Your password won't change.
     </p>
   `);
-  await send(email, 'Reset your hostelGH password', html);
+  await send(email, 'Reset your Homestead password', html);
 };
 
 // ── 9. Wishlist availability alert (student) ─────────────────────────────────
@@ -273,4 +274,55 @@ export const sendWishlistAlertEmail = async (email, name, { hostelName, hostelId
     </p>
   `);
   await send(email, `Rooms now available — ${hostelName}`, html);
+};
+
+// ── 10. Availability ping (landlord) ─────────────────────────────────────────
+export const sendAvailabilityPingEmail = async (email, landlordName, { hostelName, roomType, studentName, studentPhone, message }) => {
+  const html = wrap(`Student asking about ${roomType} at ${hostelName}`, `
+    <p style="font-size:15px;color:#374151;line-height:1.7">
+      Hi <strong>${landlordName}</strong>, a student is asking whether your <strong>${roomType}</strong>
+      at <strong>${hostelName}</strong> is still available.
+    </p>
+    <table style="width:100%;border-collapse:collapse;margin:20px 0">
+      ${[['Student', studentName], ['Phone', studentPhone || 'Not provided'], ['Message', message || 'None']].map(([k, v]) => `
+        <tr>
+          <td style="padding:10px 0;border-bottom:1px solid #F3F4F6;font-size:13px;font-weight:700;color:#6B7280;width:110px">${k}</td>
+          <td style="padding:10px 0;border-bottom:1px solid #F3F4F6;font-size:14px;color:#111827">${v}</td>
+        </tr>`).join('')}
+    </table>
+    <p style="font-size:13px;color:#6B7280">
+      Reply directly to the student. This is a free pre-booking enquiry — no fee has been charged yet.
+    </p>
+  `);
+  await send(email, `Availability enquiry — ${roomType} at ${hostelName}`, html);
+};
+
+// ── Queue: insert email into DB for async retry delivery ────────────────────
+export const queueEmail = async (to, subject, html) => {
+  try {
+    await pool.query(
+      `INSERT INTO Email_queue (to_email, subject, html) VALUES ($1, $2, $3)`,
+      [to, subject, html]
+    );
+  } catch (err) {
+    console.error('Failed to queue email:', err);
+    // fall back to direct send so the email is never lost entirely
+    await send(to, subject, html);
+  }
+};
+
+// ── 11. New saved-search match (student) ─────────────────────────────────────
+export const sendNewMatchEmail = async (email, name, { hostelName, hostelId, university }) => {
+  const html = wrap(`New hostel match at ${university}`, `
+    <p style="font-size:15px;color:#374151;line-height:1.7">
+      Hi <strong>${name}</strong>, a hostel matching your saved search was just listed at
+      <strong>${university}</strong>.
+    </p>
+    <h3 style="font-size:18px;font-weight:900;color:#0F172A;margin:16px 0 4px">${hostelName}</h3>
+    ${btn(`${FRONTEND()}/hostels/${hostelId}`, 'View hostel')}
+    <p style="font-size:12px;color:#9CA3AF;margin-top:16px">
+      Rooms fill fast — book a viewing for just GHS 50 to secure your spot.
+    </p>
+  `);
+  await send(email, `New hostel match — ${university}`, html);
 };

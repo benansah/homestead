@@ -5,6 +5,7 @@ import {
   sendNewBookingAlertEmail,
   sendContactReleasedEmail,
   sendRefundEmail,
+  sendAvailabilityPingEmail,
 } from '../services/email.js';
 
 const VIEWING_FEE = 50; // GHS 50
@@ -111,11 +112,21 @@ export const verifyBookingPayment = async (req, res) => {
       return res.status(400).json({ message: 'Payment not successful' });
     }
 
-    const booking_id = payment.data.metadata.booking_id;
+    // prefer metadata booking_id; fall back to looking up by payment_ref (dev mock)
+    let booking_id = payment.data.metadata?.booking_id;
+    if (!booking_id) {
+      const byRef = await pool.query(
+        'SELECT id FROM Bookings WHERE payment_ref = $1', [reference]
+      );
+      if (byRef.rows.length === 0) {
+        return res.status(404).json({ message: 'Booking not found for this reference' });
+      }
+      booking_id = byRef.rows[0].id;
+    }
 
     // update booking to confirmed
     const updated = await pool.query(
-      `UPDATE Bookings 
+      `UPDATE Bookings
        SET booking_status = 'confirmed'
        WHERE id = $1 AND payment_ref = $2
        RETURNING *`,
@@ -385,6 +396,107 @@ export const getAllBookings = async (req, res) => {
     );
 
     res.json(bookings.rows);
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// POST /bookings/ping — student asks landlord if room is still available (free)
+export const pingLandlord = async (req, res) => {
+  try {
+    const { room_id, message } = req.body;
+    if (!room_id) return res.status(400).json({ message: 'room_id is required' });
+
+    const roomRes = await pool.query(
+      `SELECT r.room_type, h.hostel_name, u.email AS landlord_email, u.fullname AS landlord_name, u.phone AS landlord_phone
+       FROM Rooms r
+       JOIN Hostels h ON h.id = r.hostel_id
+       JOIN Users u ON u.id = h.landlord_id
+       WHERE r.id = $1`,
+      [room_id]
+    );
+    if (roomRes.rows.length === 0) return res.status(404).json({ message: 'Room not found' });
+
+    const studentRes = await pool.query('SELECT fullname, phone FROM Users WHERE id = $1', [req.user.id]);
+    const student = studentRes.rows[0];
+    const room = roomRes.rows[0];
+
+    await pool.query(
+      'INSERT INTO Availability_pings (room_id, student_id, message) VALUES ($1, $2, $3)',
+      [room_id, req.user.id, message || null]
+    );
+
+    sendAvailabilityPingEmail(room.landlord_email, room.landlord_name, {
+      hostelName: room.hostel_name,
+      roomType: room.room_type,
+      studentName: student?.fullname || 'A student',
+      studentPhone: student?.phone,
+      message,
+    }).catch(console.error);
+
+    res.json({ message: 'Ping sent to landlord' });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GET /bookings/admin-stats — admin revenue breakdown
+export const getAdminStats = async (req, res) => {
+  try {
+    const [totalRes, byUniRes, topLandlordsRes, monthlyRes] = await Promise.all([
+      pool.query(`SELECT COUNT(*) * 50 AS total_revenue FROM Bookings WHERE payment_ref IS NOT NULL`),
+      pool.query(`
+        SELECT h.university, COUNT(b.id) * 50 AS revenue, COUNT(b.id) AS bookings
+        FROM Bookings b
+        JOIN Rooms r ON r.id = b.room_id
+        JOIN Hostels h ON h.id = r.hostel_id
+        WHERE b.payment_ref IS NOT NULL
+        GROUP BY h.university ORDER BY revenue DESC`),
+      pool.query(`
+        SELECT u.fullname, COUNT(b.id) AS bookings, COUNT(b.id) * 50 AS revenue
+        FROM Bookings b
+        JOIN Rooms r ON r.id = b.room_id
+        JOIN Hostels h ON h.id = r.hostel_id
+        JOIN Users u ON u.id = h.landlord_id
+        WHERE b.payment_ref IS NOT NULL
+        GROUP BY u.id, u.fullname ORDER BY revenue DESC LIMIT 5`),
+      pool.query(`
+        SELECT TO_CHAR(DATE_TRUNC('month', booked_at), 'Mon YY') AS month,
+               COUNT(*) AS count
+        FROM Bookings WHERE payment_ref IS NOT NULL
+          AND booked_at >= NOW() - INTERVAL '6 months'
+        GROUP BY DATE_TRUNC('month', booked_at)
+        ORDER BY DATE_TRUNC('month', booked_at)`),
+    ]);
+
+    res.json({
+      total_revenue: Number(totalRes.rows[0]?.total_revenue || 0),
+      by_university: byUniRes.rows,
+      top_landlords: topLandlordsRes.rows,
+      monthly: monthlyRes.rows,
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+// GET /bookings/calendar — landlord month-view calendar data
+export const getLandlordCalendar = async (req, res) => {
+  try {
+    const result = await pool.query(
+      `SELECT b.id, b.booked_at, b.booking_status, r.room_type, r.id AS room_id, u.fullname AS student_name
+       FROM Bookings b
+       JOIN Rooms r ON r.id = b.room_id
+       JOIN Hostels h ON h.id = r.hostel_id
+       JOIN Users u ON u.id = b.student_id
+       WHERE h.landlord_id = $1 AND b.booking_status NOT IN ('cancelled')
+       ORDER BY b.booked_at DESC`,
+      [req.user.id]
+    );
+    res.json(result.rows);
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: 'Server error' });

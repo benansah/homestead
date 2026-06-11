@@ -1,0 +1,7 @@
+{
+  "dependencies": {
+    "axios": "^1.17.0",
+    "pg": "^8.21.0",
+    "postgresql": "^0.0.1"
+  }
+}

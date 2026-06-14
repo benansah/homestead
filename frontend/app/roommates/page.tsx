@@ -265,7 +265,7 @@ function RoommatesContent() {
       <Navbar />
 
       {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #EBF3FF 0%, #EDE9FE 100%)', padding: 'clamp(48px,8vw,80px) 20px clamp(40px,7vw,64px)', textAlign: 'center', borderBottom: '1px solid rgba(99,102,241,0.12)' }}>
+      <div style={{ background: 'linear-gradient(135deg, #00B4D8 30%, #EDE9FE 100%)', padding: 'clamp(48px,8vw,80px) 20px clamp(40px,7vw,64px)', textAlign: 'center', borderBottom: '1px solid rgba(99,102,241,0.12)' }}>
         <div style={{ maxWidth: 600, margin: '0 auto' }}>
           <div style={{ width: 80, height: 80, borderRadius: '50%', background: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', margin: '0 auto 24px', boxShadow: 'var(--sh-md)' }}>
             <Users size={38} style={{ color: 'var(--blue)' }} />
@@ -278,7 +278,9 @@ function RoommatesContent() {
             {hostelId ? ' at this hostel' : ' across the platform'}.
           </p>
           <Link href="/roommates/profile"
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '15px 32px', borderRadius: 14, background: 'var(--blue)', color: 'white', fontWeight: 700, fontSize: 17, textDecoration: 'none', boxShadow: 'var(--sh-blue)' }}>
+            style={{ display: 'inline-flex', alignItems: 'center', gap: 10, padding: '15px 32px', borderRadius: 14, background: '#000080', color: 'white', fontWeight: 700, fontSize: 17, textDecoration: 'none', boxShadow: 'var(--sh-blue)', transition: 'transform 0.15s ease, box-shadow 0.15s ease' }}
+            onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 14px 32px rgba(0, 106, 255, 0.24)'; }}
+            onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = 'var(--sh-blue)'; }}>
             <UserCheck size={20} /> Set up my profile →
           </Link>
         </div>

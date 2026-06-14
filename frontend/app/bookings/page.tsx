@@ -80,6 +80,7 @@ export default function BookingsPage() {
   const [loading,  setLoading]  = useState(true);
   const [tab,      setTab]      = useState<TabKey>('all');
   const [copiedId, setCopiedId] = useState<number | null>(null);
+  const [hover, setHover] = useState(false);
 
   useEffect(() => {
     if (authLoading) return;
@@ -116,7 +117,24 @@ export default function BookingsPage() {
       <h3 style={{ fontSize: 22, fontWeight: 800, color: '#0F172A', marginBottom: 10 }}>{title}</h3>
       <p style={{ fontSize: 16, color: '#64748B', marginBottom: 32, lineHeight: 1.7 }}>{sub}</p>
       <Link href="/hostels"
-        style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '14px 28px', background: 'var(--blue)', color: 'white', borderRadius: 12, fontWeight: 700, fontSize: 16, textDecoration: 'none' }}>
+        style={{ 
+                display: 'inline-flex',
+                alignItems: 'center', 
+                gap: 8,
+                padding: '14px 28px',
+                background: hover ? "#191970" : "var(--blue)",
+                color: hover ? "var(--blue)" : "white",
+                borderRadius: 12,
+                fontWeight: 700,
+                fontSize: 16,
+                textDecoration: 'none',
+                transition: "background-color 0.3s ease, color 0.3s ease, transform 0.3s ease, box-shadow 0.3s ease",
+                transform: hover ? 'translateY(-2px)' : 'none',
+                boxShadow: hover ? '0 5px 7px rgba(25,25,112,0.5)' : 'none',
+                 }}
+                  onMouseEnter={() => setHover(true)}
+                  onMouseLeave={() => setHover(false)}
+                 >
         Browse hostels <ArrowRight size={16} />
       </Link>
     </div>
@@ -157,7 +175,19 @@ export default function BookingsPage() {
           <div className="r-tabs-row" style={{ display: 'flex', gap: 0, borderTop: '1px solid var(--border)', marginTop: 4 }}>
             {TABS.map(t => (
               <button key={t.key} onClick={() => setTab(t.key)} className="r-tab"
-                style={{ padding: '14px 24px', fontSize: 15, fontWeight: tab === t.key ? 700 : 500, color: tab === t.key ? 'var(--blue)' : '#64748B', background: 'none', border: 'none', cursor: 'pointer', borderBottom: `3px solid ${tab === t.key ? 'var(--blue)' : 'transparent'}`, transition: 'all 0.15s', marginBottom: -1, display: 'flex', alignItems: 'center', gap: 8 }}>
+                style={{ 
+                        padding: '14px 24px',
+                        fontSize: 15,
+                        fontWeight: tab === t.key ? 700 : 500,
+                        color: tab === t.key ? 'var(--blue)' : '#64748B',
+                        background: 'none', border: 'none',
+                        cursor: 'pointer',
+                        borderBottom: `3px solid ${tab === t.key ? 'var(--blue)' : 'transparent'}`,
+                        transition: 'all 0.15s', marginBottom: -1,
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 8
+                           }}>
                 {t.label}
                 {t.key === 'active' && activeCount > 0 && (
                   <span style={{ background: 'var(--blue)', color: 'white', fontSize: 12, fontWeight: 800, padding: '2px 8px', borderRadius: 99 }}>{activeCount}</span>
@@ -171,9 +201,15 @@ export default function BookingsPage() {
         </div>
       </div>
 
+      <style jsx>{`
+        .r-tab { transition: border-bottom-color 0.15s ease; }
+        .r-tab:hover { border-bottom-color: var(--blue) !important; }
+      `}</style>
+
       {/* ── Content ── */}
       <div className="r-bookings-body" style={{ maxWidth: 960, margin: '0 auto', padding: '36px 32px 80px' }}>
-
+      {/* <div className="r-bookings-body" style={{ maxWidth: 960, margin: '0 auto', padding: '36px 32px 80px', background: 'white', borderRadius: 16, boxShadow: '0 20px 40px rgba(15,23,42,0.06)' }}></div> */}
+        
         {loading ? (
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: 300 }}>
             <Loader2 size={36} style={{ color: 'var(--blue)' }} className="animate-spin" />

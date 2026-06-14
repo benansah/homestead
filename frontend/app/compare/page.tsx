@@ -251,7 +251,18 @@ function CompareContent() {
           onClick={() => setAdding(true)}
           onMouseEnter={() => setAddHover(true)}
           onMouseLeave={() => setAddHover(false)}
-          style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10, background: 'none', border: 'none', cursor: 'pointer', color: addHover ? 'var(--blue)' : 'var(--text-muted)', transition: 'color 0.15s' }}>
+          style={{
+             display: 'flex',
+              flexDirection: 'column',
+               alignItems: 'center',
+                gap: 10,
+                 background:addHover ? 'rgba(0, 0, 255, 0.1)' : '#3B82F6',
+                  border: 'none',
+                   cursor: 'pointer',
+                    color: addHover ? 'var(--blue)' : 'var(--text-muted)',
+                     transition: 'color 0.15s',
+                    boxShadow: addHover ? '0 4px 12px rgba(0,0,0,0.2)' : 'none',
+                      }}>
           <div style={{ width: 44, height: 44, borderRadius: '50%', border: `2px dashed ${addHover ? 'var(--blue)' : 'var(--border)'}`, display: 'flex', alignItems: 'center', justifyContent: 'center', transition: 'border-color 0.15s' }}>
             <Plus size={20} />
           </div>
@@ -302,7 +313,22 @@ function CompareContent() {
               Add up to 3 hostels to compare them side by side — price, rating, availability and more.
             </p>
             <button onClick={() => setAdding(true)}
-              style={{ display: 'inline-flex', alignItems: 'center', gap: 8, padding: '12px 28px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: 12, fontSize: 14, fontWeight: 700, cursor: 'pointer', boxShadow: 'var(--sh-blue)' }}>
+                    onMouseEnter={() => setAddHover(true)}
+                    onMouseLeave={() => setAddHover(false)}
+              style={{ 
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: 8,
+                      padding: '12px 28px',
+                      background: addHover ? '#191970' : '#3B82F6',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: 12,
+                      fontSize: 14,
+                      fontWeight: 700,
+                      cursor: 'pointer',
+                      boxShadow:  addHover ? '0 4px 12px #000000' : 'none'
+                    }}>
               <Plus size={16} /> Add your first hostel
             </button>
           </div>

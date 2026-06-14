@@ -4,6 +4,8 @@ import Footer from '../../components/Footer';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import {CldImage} from 'next-cloudinary';
+
 
 const FAQS = [
   {
@@ -130,7 +132,7 @@ export default function HelpPage() {
         ))}
 
         <div id="contact" className="contact-block">
-          <h2>Still need help?</h2>
+          <h2>STILL NEED HELP?</h2>
           <p>
             Our team is available Monday–Friday, 8am–6pm. We typically respond within a few hours.
           </p>
@@ -138,7 +140,21 @@ export default function HelpPage() {
             <a href="mailto:support@Homestead.com" className="support-link email-link">
               Email support →
             </a>
-            <Link href="/bookings" className="support-link bookings-link">
+            <Link href="/bookings" className="support-link bookings-link"
+              style={{ 
+              color: '#191970',
+              borderBottom: '3px solid #191970', 
+              textDecoration: 'none', 
+              fontWeight: 'bold',
+              transition: 'all 0.2s cubic-bezier(0.4,0,0.2,1)',
+              }}
+                onMouseOver={e => {
+                e.currentTarget.style.borderBottom = "2px solid #FFD700"; // gold on hover
+                }}
+                  onMouseOut={e => {
+                  e.currentTarget.style.borderBottom = "2px solid transparent"; // reset when not hovered
+                }}
+          >
               View my bookings
             </Link>
           </div>
@@ -152,12 +168,15 @@ export default function HelpPage() {
           min-height: 100vh;
           display: flex;
           flex-direction: column;
-          background: #191970;
+          background-image: url("https://res.cloudinary.com/dblxopuwf/image/fetch/w_1920,h_1080,c_fill,q_auto/https://images.unsplash.com/photo-1507525428034-b723cf961d3e");
+          background-size: cover;
+          background-repeat: no-repeat;
+          background-position: center;
           color: #111827;
         }
 
         .help-hero {
-          background: linear-gradient(135deg, #2563eb 0%, #60a5fa 100%);
+          background: linear-gradient(135deg, #191970 25%, #FFD700 70%);
           color: #fff;
           padding: 4rem 1.5rem;
           text-align: center;
@@ -207,7 +226,8 @@ export default function HelpPage() {
 
         .faq-section,
         .contact-block {
-          background: #fff;
+          background-color:#FFFFF0; 
+          opacity: 0.8;
           border: 1px solid rgba(148, 163, 184, 0.18);
           border-radius: 1rem;
           box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
@@ -221,6 +241,9 @@ export default function HelpPage() {
 
         .faq-section-title {
           margin: 0 0 1rem;
+          font-family: 'Georgia', serif;  
+          font-style: italic;              
+          font-weight: bold;
           font-size: 1.5rem;
           color: #111827;
           background:#FFFFF0;
@@ -257,7 +280,7 @@ export default function HelpPage() {
           padding: 1rem 1.25rem;
           color: inherit;
           font: inherit;
-          text-align: left;
+          text-align: center;
           cursor: pointer;
           transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
         }
@@ -269,9 +292,10 @@ export default function HelpPage() {
         }
 
         .faq-item:hover .faq-btn {
-          background: #eff6ff;
+          background: #e6ff;
         }
 
+       
         .faq-btn span {
           display: block;
           flex: 1;
@@ -279,6 +303,9 @@ export default function HelpPage() {
           font-weight: 600;
           font-size: 1rem;
           line-height: 1.5;
+          border: 1px solid gray;
+          border-radius: 5px;
+          padding: 0.25rem 0.75rem;
         }
 
         .faq-body {
@@ -287,6 +314,7 @@ export default function HelpPage() {
           color: #4b5563;
           font-size: 0.98rem;
           line-height: 1.75;
+          
         }
 
         .faq-body p {
@@ -307,11 +335,23 @@ export default function HelpPage() {
           margin-top: 1rem;
         }
 
+        .contact-block p {
+        font-style: italic;
+        color: #555;  
+        }
+
+      .contact-block h2{
+        font-family: 'Georgia', serif;
+        font-weight: bold;
+        color: #111827;
+      }
+
         .support-link {
           display: inline-flex;
           align-items: center;
           justify-content: center;
           padding: 0.85rem 1.25rem;
+          border: 1px solid rgba(37, 99, 235, 0.5);
           border-radius: 0.75rem;
           text-decoration: none;
           font-weight: 600;
@@ -322,20 +362,19 @@ export default function HelpPage() {
           background: #2563eb;
           color: #fff;
         }
+        
+        
 
         .email-link:hover {
           background: #1d4ed8;
         }
 
-        .bookings-link {
-          background: #2563eb;
-          color: #111827;
-        }
+        
 
         .bookings-link:hover {
-          background: #FFFFF0;
+          background: #2563eb;
         }
-sss
+
         @media (min-width: 768px) {
           .help-hero {
             padding: 5rem 2rem;

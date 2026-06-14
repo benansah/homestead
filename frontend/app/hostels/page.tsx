@@ -15,6 +15,7 @@ import { Hostel } from '../../types';
 import { useUniversities } from '../../hooks/useUniversities';
 import { useAuth } from '../../context/AuthContext';
 
+
 const BrowseMap = dynamic(() => import('../../components/BrowseMap'), {
   ssr: false,
   loading: () => <div style={{ flex: 1, background: '#F3F4F6', borderRadius: 16, minHeight: 500 }} />,
@@ -23,7 +24,10 @@ const BrowseMap = dynamic(() => import('../../components/BrowseMap'), {
 const UNI_SHORT: Record<string, string> = {
   'University of Ghana': 'UG', 'KNUST': 'KNUST', 'UCC': 'UCC',
   'University of Education': 'UEW', 'Ashesi University': 'Ashesi',
+   'University of Health and Allied Sciences': 'UHAS',
 };
+
+
 
 interface Filters {
   university: string; min_price: string; max_price: string;
@@ -37,15 +41,40 @@ const SL: React.CSSProperties = {
 };
 
 function Chip({ label, icon, onRemove }: { label: string; icon?: React.ReactNode; onRemove: () => void }) {
+  const [hover, setHover] = useState(false);
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 8px 4px 10px',
-      borderRadius: 99, background: 'var(--blue-light)', color: 'var(--blue)',
-      fontSize: 12, fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}>
+    <span style={{ 
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '4px 8px 4px 10px',
+                  borderRadius: 99,
+                  background:  hover ? "var(--blue)" : 'var(--blue-light)',
+                  color:  hover ? "white" : 'var(--blue)',
+                  fontSize: 12, fontWeight: 600,
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap'
+       }}
+      
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+
+      >
       {icon}{label}
       <button onClick={onRemove}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 16, height: 16, borderRadius: '50%', background: 'rgba(0,106,255,0.15)',
-          border: 'none', cursor: 'pointer', marginLeft: 2 }}>
+                style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 16, height: 16,
+                  borderRadius: '50%',
+                  background: 'rgba(0,106,255,0.15)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  marginLeft: 2
+             }}
+              
+             >
         <X size={10} style={{ color: 'var(--blue)' }} />
       </button>
     </span>
@@ -66,6 +95,9 @@ function HostelsContent() {
   const [showSaveModal, setShowSaveModal] = useState(false);
   const [saveLabel, setSaveLabel] = useState('');
   const [savingSearch, setSavingSearch] = useState(false);
+  const [hoveredButton, setHoveredButton] = useState<string | null>(null);
+
+  const [hoveredUni, setHoveredUni] = useState<string | null>(null);
 
   const sorted = [...hostels].sort((a, b) => {
     if (sortBy === 'price_asc') return (a.min_price || 0) - (b.min_price || 0);
@@ -162,6 +194,7 @@ function HostelsContent() {
           </label>
         ))}
       </div>
+
       <label style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '6px 0', cursor: 'pointer' }}>
         <input type="checkbox" checked={filters.is_verified === 'true'}
           onChange={e => setF('is_verified', e.target.checked ? 'true' : '')}
@@ -215,23 +248,87 @@ function HostelsContent() {
               </div>
             </div>
             <button onClick={() => doSearch(filters)}
-              style={{ padding: '0 24px', background: 'var(--blue)', color: 'white', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+             onMouseEnter={() => setHoveredButton('search')}
+             onMouseLeave={() => setHoveredButton(null)}
+//              style={{ padding: '0 24px', background: 'var(--blue)', color: 'white', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+             style={{ 
+               padding: '0 24px', 
+               background: hoveredButton === 'search' ? '#000080' : 'var(--blue)', 
+               color: 'white', 
+               fontSize: 14, 
+               fontWeight: 700, 
+               border: 'none', 
+               cursor: 'pointer', 
+               flexShrink: 0,
+               transition: 'all 0.2s ease',
+               transform: hoveredButton === 'search' ? 'scale(1.02)' : 'scale(1)'
+             }}
+                >
               Search
             </button>
           </div>
 
           {/* University quick-filter chips */}
           <div className="h-scroll" style={{ display: 'flex', gap: 8, marginTop: 14, paddingBottom: 2 }}>
-            <button onClick={() => setF('university', '')}
-              style={{ flexShrink: 0, padding: '6px 16px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${!filters.university ? 'var(--blue)' : 'var(--border)'}`, background: !filters.university ? 'var(--blue)' : 'white', color: !filters.university ? 'white' : '#6B7280', transition: 'all 0.15s' }}>
+            <button
+               onClick={() => setF('university', '')}
+               onMouseEnter={() => setHoveredButton('all-uni')}
+               onMouseLeave={() => setHoveredButton(null)}
+               style={{
+                flexShrink: 0,
+                padding: '6px 16px',
+                borderRadius: 99,
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                border: `1.5px solid ${!filters.university ? 'var(--blue)' : 'var(--border)'}`,
+                background: !filters.university ? 'var(--blue)' : 'white',
+                color: !filters.university ? 'white' : '#6B7280',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: hoveredButton === 'all-uni' ? '0 2px 7px rgba(37,99,235,1)' : 'none'
+               }}
+               >
               All
-            </button>
-            {universities.map(u => (
-              <button key={u.id} onClick={() => setF('university', filters.university === u.name ? '' : u.name)}
-                style={{ flexShrink: 0, padding: '6px 16px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', border: `1.5px solid ${filters.university === u.name ? 'var(--blue)' : 'var(--border)'}`, background: filters.university === u.name ? 'var(--blue)' : 'white', color: filters.university === u.name ? 'white' : '#6B7280', transition: 'all 0.15s' }}>
+                </button>
+            {universities.map((u) =>  {
+               const isHovered = hoveredUni === u.name;
+                return (
+              <button key={u.id} onClick={() => setF('university',
+                 filters.university === u.name ? '' : u.name)}
+                
+                 style={{
+                           flexShrink: 0,
+                           padding: '6px 16px',
+                           borderRadius: 99,
+                           fontSize: 12,
+                           fontWeight: 700,
+                           cursor: 'pointer',
+                           whiteSpace: 'nowrap',
+                           border: `1.5px solid ${filters.university === u.name ? 'var(--blue)' : 'var(--border)'}`,
+                            background:
+                             filters.university === u.name
+                             ? "var(--blue)"
+                             : isHovered
+                             ? "var(--blue-light)"
+                             : "white",
+                             color:
+                             filters.university === u.name
+                             ? "white"
+                             : isHovered
+                             ? "var(--blue)"
+                             : "#6B7280",
+                             transition: "all 0.15s",
+                             boxShadow: isHovered
+                             ? "0 4px 12px rgba(0,106,255,0.25)"
+                             : "none",
+                            }}
+                            
+                            onMouseEnter={() => setHoveredUni(u.name)}
+                            onMouseLeave={()  => setHoveredUni(null)}
+                          >
                 {UNI_SHORT[u.name] ?? u.name}
-              </button>
-            ))}
+              </button>);
+           })}
           </div>
         </div>
       </div>
@@ -285,7 +382,22 @@ function HostelsContent() {
             {/* Save search */}
             {activeCount > 0 && user?.role === 'student' && (
               <button onClick={() => setShowSaveModal(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 99, border: '1.5px solid var(--border)', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'white', color: 'var(--blue)', whiteSpace: 'nowrap' }}>
+                style={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 14px',
+                        borderRadius: 99,
+                        border: '1.5px solid var(--border)',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        background: 'white',
+                        color: 'var(--blue)',
+                        whiteSpace: 'nowrap',
+                        boxShadow: hoveredButton === 'save-search' ? '0 2px 8px rgba(37,99,235,0.8)' : 'none',
+                        transform: hoveredButton === 'save-search' ? 'translateY(-2px)' : 'translateY(0)', 
+                           }}>
                 <Bookmark size={13} /> Save search
               </button>
             )}
@@ -317,11 +429,43 @@ function HostelsContent() {
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(3px)' }}
               onClick={() => setShowFilters(false)} />
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, background: 'white', width: 300, overflowY: 'auto', padding: 20, boxShadow: 'var(--sh-xl)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                <p style={{ fontWeight: 800, fontSize: 17, color: '#0F172A' }}>Filters</p>
-                <button onClick={() => setShowFilters(false)}
-                  style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <X size={15} style={{ color: 'var(--text-muted)' }} />
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 20,
+                paddingBottom: 16,
+                borderBottom: '1px solid var(--border)',
+                gap: 12,
+              }}>
+                <p style={{
+                  fontWeight: 800,
+                  fontSize: 17,
+                  color: '#0F172A',
+                  letterSpacing: '-0.3px',
+                  margin: 0,
+                }}>Filters</p>
+                <button 
+                  onClick={() => setShowFilters(false)}
+                  onMouseEnter={() => setHoveredButton('close-filters')}
+                  onMouseLeave={() => setHoveredButton(null)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: hoveredButton === 'close-filters' ? '#F3F4F6' : 'var(--surface)',
+                    border: hoveredButton === 'close-filters' ? '1px solid var(--blue)' : '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                  }}>
+                  <X size={15} style={{
+                    color: hoveredButton === 'close-filters' ? 'var(--blue)' : 'var(--text-muted)',
+                    transition: 'color 0.2s ease',
+                  }} />
                 </button>
               </div>
               <Sidebar />

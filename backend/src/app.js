@@ -14,6 +14,9 @@ import referralRoutes from './routes/referralRoutes.js';
 import roommateRoutes from './routes/roommateRoutes.js';
 import universityRoutes from './routes/universityRoutes.js';
 import savedSearchRoutes from './routes/savedSearchRoutes.js';
+import residenceAreaRoutes from './routes/residenceAreas.js';
+import { hostelSchema } from '../validators/hostelValidators.js';
+import { validate } from './middleware/validate.js';
 import { generalLimiter, authLimiter } from './middleware/rateLimiter.js';
 import { processEmailQueue } from './services/emailWorker.js';
 
@@ -52,6 +55,14 @@ app.use('/api/referrals', referralRoutes);
 app.use('/api/roommates', roommateRoutes);
 app.use('/api/universities', universityRoutes);
 app.use('/api/saved-searches', savedSearchRoutes);
+app.use('/api/residence-areas', residenceAreaRoutes);
+
+// Dev-only debug endpoints
+if (process.env.NODE_ENV !== 'production') {
+  app.post('/api/_debug/validate-hostel', validate(hostelSchema), (req, res) => {
+    res.json({ message: 'Validation passed', data: req.body });
+  });
+}
 
 // ── Start ────────────────────────────────────────────────────
 app.listen(PORT, () => {

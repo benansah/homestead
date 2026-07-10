@@ -13,7 +13,7 @@ import Link from 'next/link';
 
 const STATUS_CFG: Record<string, { label: string; color: string; bg: string; dot: string }> = {
   approved: { label: 'Approved', color: '#065F46', bg: '#ECFDF5', dot: '#10B981' },
-  pending:  { label: 'Pending',  color: '#92400E', bg: '#FFFBEB', dot: '#F59E0B' },
+  pending:  { label: 'Awaiting verification',  color: '#92400E', bg: '#FFFBEB', dot: '#F59E0B' },
   rejected: { label: 'Rejected', color: '#9F1239', bg: '#FFF1F2', dot: '#F43F5E' },
   hidden:   { label: 'Hidden',   color: '#374151', bg: '#F3F4F6', dot: '#9CA3AF' },
 };

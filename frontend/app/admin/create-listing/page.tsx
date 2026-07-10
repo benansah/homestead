@@ -9,6 +9,7 @@ import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUniversities } from '../../../hooks/useUniversities';
+import type { ResidenceArea } from '../../../types';
 
 const LocationPicker = dynamic(() => import('../../../components/LocationPicker'), {
   ssr: false,
@@ -22,10 +23,18 @@ interface RoomRow { room_type: string; price: string; gender_policy: string; qua
 const EMPTY_ROOM: RoomRow = { room_type: '', price: '', gender_policy: 'Both', quantity: '1', max_occupants: '1' };
 const ROOM_TYPES = ['Self-contained Single', 'Self-contained Double', 'Shared Room', 'Chamber and Hall', 'Single Room'];
 
+interface LandlordOption {
+  id: number;
+  fullname: string;
+  email: string;
+  role: string;
+}
+
 export default function AdminCreateListing() {
   const router = useRouter();
   const { universities } = useUniversities();
-  const [landlords, setLandlords] = useState<any[]>([]);
+  const [landlords, setLandlords] = useState<LandlordOption[]>([]);
+  const [residenceAreas, setResidenceAreas] = useState<ResidenceArea[]>([]);
   const [loading, setLoading]     = useState(false);
   const [rooms, setRooms]         = useState<RoomRow[]>([{ ...EMPTY_ROOM }]);
 
@@ -42,10 +51,12 @@ export default function AdminCreateListing() {
     latitude: '5.6502',
     longitude: '-0.1869',
     track: 'A',
+    residence_area_id: '',
   });
 
   useEffect(() => {
-    api.get('/users').then(r => setLandlords(r.data.filter((u: any) => u.role === 'landlord'))).catch(() => {});
+    api.get('/users').then(r => setLandlords(r.data.filter((u: LandlordOption) => u.role === 'landlord'))).catch(() => {});
+    api.get('/residence-areas').then(r => setResidenceAreas(r.data)).catch(() => {});
   }, []);
 
   const setF = (k: string, v: string) => setForm(p => ({ ...p, [k]: v }));
@@ -60,20 +71,24 @@ export default function AdminCreateListing() {
       const hRes = await api.post('/hostels', {
         ...form,
         landlord_id: Number(form.landlord_id),
+        residence_area_id: form.residence_area_id ? Number(form.residence_area_id) : null,
         latitude:  parseFloat(form.latitude)  || 5.6502,
         longitude: parseFloat(form.longitude) || -0.1869,
       });
       const hostelId = hRes.data.hostel.id;
       const validRooms = rooms.filter(r => r.room_type && r.price);
       if (validRooms.length > 0) {
-        await api.post(`/hostels/${hostelId}/rooms/bulk`, {
+        await api.post(`/rooms/${hostelId}/rooms/bulk`, {
           rooms: validRooms.map(r => ({ room_type: r.room_type, price: parseFloat(r.price), gender_policy: r.gender_policy, quantity: parseInt(r.quantity), max_occupants: parseInt(r.max_occupants) || 1 })),
         });
       }
       toast.success(`Listing created${validRooms.length > 0 ? ` with ${validRooms.length} room(s)` : ''} — approved!`);
       router.push('/admin/listings');
-    } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to create listing');
+    } catch (err: unknown) {
+      const message = err && typeof err === 'object' && 'response' in err && err.response && typeof err.response === 'object' && 'data' in err.response && err.response.data && typeof err.response.data === 'object' && 'message' in err.response.data
+        ? String(err.response.data.message)
+        : 'Failed to create listing';
+      toast.error(message);
     } finally {
       setLoading(false);
     }
@@ -104,7 +119,7 @@ export default function AdminCreateListing() {
                     <option value="">Select a landlord</option>
                     {landlords.map(l => <option key={l.id} value={l.id}>{l.fullname} · {l.email}</option>)}
                   </select>
-                  <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>Don't see the landlord? They must register first.</p>
+                  <p style={{ fontSize: 12, color: '#94A3B8', marginTop: 4 }}>Don&apos;t see the landlord? They must register first.</p>
                 </div>
 
                 <div>
@@ -123,6 +138,14 @@ export default function AdminCreateListing() {
                 <div>
                   <p style={label}>Full address *</p>
                   <input value={form.hostel_address} onChange={e => setF('hostel_address', e.target.value)} placeholder="e.g. Legon Road, East Legon, Accra" style={input} />
+                </div>
+
+                <div>
+                  <p style={label}>Residence area</p>
+                  <select value={form.residence_area_id} onChange={e => setF('residence_area_id', e.target.value)} style={input}>
+                    <option value="">Select area</option>
+                    {residenceAreas.map(area => <option key={area.id} value={area.id}>{area.name} · {area.university_name}</option>)}
+                  </select>
                 </div>
 
                 <div>

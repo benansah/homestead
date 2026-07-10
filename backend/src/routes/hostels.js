@@ -11,10 +11,11 @@ import {
   getFlaggedHostels,
   dismissFlags,
 } from '../controllers/hostelController.js';
+import { createRoom, createRoomsBulk } from '../controllers/roomController.js';
 import authMiddleware from '../middleware/authMiddleware.js';
 import allowRoles from '../middleware/roles.js';
 import { validate } from '../middleware/validate.js';
-import { hostelSchema } from '../../validators/hostelValidators.js';
+import { hostelSchema, roomSchema, roomsBulkSchema } from '../../validators/hostelValidators.js';
 
 const router = express.Router();
 
@@ -28,6 +29,9 @@ router.get('/:id', getHostelById);
 
 // Landlord + admin — must be logged in
 router.post('/', authMiddleware, allowRoles('landlord', 'admin'), validate(hostelSchema), createHostel);
+// Alias room routes so frontend can POST to /api/hostels/:hostel_id/rooms
+router.post('/:hostel_id/rooms', authMiddleware, allowRoles('landlord', 'admin'), validate(roomSchema), createRoom);
+router.post('/:hostel_id/rooms/bulk', authMiddleware, allowRoles('landlord', 'admin'), validate(roomsBulkSchema), createRoomsBulk);
 router.put('/:id', authMiddleware, allowRoles('landlord', 'admin'), updateHostel);
 router.delete('/:id', authMiddleware, allowRoles('landlord', 'admin'), deleteHostel);
 

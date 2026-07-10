@@ -1,3 +1,4 @@
+import jwt from 'jsonwebtoken';
 import pool from '../../database/db.js';
 import {
   sendListingApprovedEmail,
@@ -9,40 +10,72 @@ import {
 // GET all approved hostels (students browsing)
 export const getAllHostels = async (req, res) => {
   try {
-    const { university, min_price, max_price, gender_policy } = req.query;
+    const { university, min_price, max_price, gender_policy, residence_area } = req.query;
 
-    let query = `
-      SELECT h.*, 
-        COUNT(DISTINCT r.id) AS total_rooms,
-        AVG(rv.rating) AS avg_rating,
-        MIN(r.price) AS starting_price
-      FROM Hostels h
-      LEFT JOIN Rooms r ON r.hostel_id = h.id
-      LEFT JOIN Reviews rv ON rv.hostel_id = h.id
-      WHERE h.status = 'approved'
-    `;
+    let user = null;
+    const authHeader = req.headers.authorization;
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        user = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+      } catch {
+        user = null;
+      }
+    }
 
+    const isAdmin = user?.role === 'admin';
+    const isLandlord = user?.role === 'landlord';
+
+    const whereClauses = [];
     const values = [];
     let i = 1;
 
+    if (!isAdmin && !isLandlord) {
+      whereClauses.push(`h.status = 'approved'`);
+    } else if (isLandlord) {
+      whereClauses.push(`h.landlord_id = $${i++}`);
+      values.push(user.id);
+    }
+
     if (university) {
-      query += ` AND h.university ILIKE $${i++}`;
+      whereClauses.push(`h.university ILIKE $${i++}`);
       values.push(`%${university}%`);
     }
+    if (residence_area) {
+      whereClauses.push(`ra.name ILIKE $${i++}`);
+      values.push(`%${residence_area}%`);
+    }
     if (gender_policy) {
-      query += ` AND r.gender_policy = $${i++}`;
+      whereClauses.push(`r.gender_policy = $${i++}`);
       values.push(gender_policy);
     }
     if (min_price) {
-      query += ` AND r.price >= $${i++}`;
+      whereClauses.push(`r.price >= $${i++}`);
       values.push(min_price);
     }
     if (max_price) {
-      query += ` AND r.price <= $${i++}`;
+      whereClauses.push(`r.price <= $${i++}`);
       values.push(max_price);
     }
 
-    query += ` GROUP BY h.id ORDER BY h.is_verified DESC, avg_rating DESC`;
+    let query = `
+      SELECT h.*, 
+        ra.id AS residence_area_id,
+        ra.name AS residence_area_name,
+        COUNT(DISTINCT r.id) AS total_rooms,
+        COUNT(DISTINCT r.id) FILTER (WHERE r.is_available = true) AS available_rooms,
+        AVG(rv.rating) AS avg_rating,
+        MIN(r.price) AS starting_price
+      FROM Hostels h
+      LEFT JOIN Residence_areas ra ON ra.id = h.residence_area_id
+      LEFT JOIN Rooms r ON r.hostel_id = h.id
+      LEFT JOIN Reviews rv ON rv.hostel_id = h.id
+    `;
+
+    if (whereClauses.length > 0) {
+      query += ` WHERE ${whereClauses.join(' AND ')}`;
+    }
+
+    query += ` GROUP BY h.id, ra.id, ra.name ORDER BY h.is_verified DESC, avg_rating DESC`;
 
     const result = await pool.query(query, values);
     res.json(result.rows);
@@ -69,8 +102,20 @@ export const getHostelById = async (req, res) => {
       return res.status(404).json({ message: 'Hostel not found' });
     }
 
-    // Increment view counter (fire-and-forget)
-    pool.query('UPDATE Hostels SET view_count = view_count + 1 WHERE id = $1', [id]).catch(() => {});
+    const authHeader = req.headers.authorization;
+    let viewerRole = null;
+    if (authHeader?.startsWith('Bearer ')) {
+      try {
+        const decoded = jwt.verify(authHeader.split(' ')[1], process.env.JWT_SECRET);
+        viewerRole = decoded.role;
+      } catch {
+        viewerRole = null;
+      }
+    }
+
+    if (viewerRole === 'student') {
+      pool.query('UPDATE Hostels SET view_count = view_count + 1 WHERE id = $1', [id]).catch(() => {});
+    }
 
     // get rooms for this hostel
     const rooms = await pool.query(
@@ -137,6 +182,7 @@ export const createHostel = async (req, res) => {
       latitude,
       longitude,
       track,
+      residence_area_id,
     } = req.body;
 
     // admin can specify a landlord_id; otherwise use the logged-in user
@@ -151,11 +197,11 @@ export const createHostel = async (req, res) => {
     const newHostel = await pool.query(
       `INSERT INTO Hostels
         (landlord_id, hostel_name, hostel_address, university,
-         description, latitude, longitude, status, is_verified, track)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10)
+         description, latitude, longitude, status, is_verified, track, residence_area_id)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11)
        RETURNING *`,
       [landlord_id, hostel_name, hostel_address, university,
-       description, latitude, longitude, status, is_verified, track || 'A']
+       description, latitude, longitude, status, is_verified, track || 'A', residence_area_id || null]
     );
 
     res.status(201).json({
@@ -287,7 +333,7 @@ export const updateHostel = async (req, res) => {
       return res.status(403).json({ message: 'Not authorised' });
     }
 
-    const allowed = ['hostel_name', 'hostel_address', 'university', 'description', 'latitude', 'longitude', 'track'];
+    const allowed = ['hostel_name', 'hostel_address', 'university', 'description', 'latitude', 'longitude', 'track', 'residence_area_id'];
     const fields = []; const values = []; let idx = 1;
     for (const key of allowed) {
       if (req.body[key] !== undefined) { fields.push(`${key} = $${idx++}`); values.push(req.body[key]); }

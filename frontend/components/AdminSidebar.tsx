@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
-import { LayoutDashboard, Building2, CalendarCheck, Users, LogOut, ExternalLink, GraduationCap } from 'lucide-react';
+import { LayoutDashboard, Building2, CalendarCheck, Users, LogOut, ExternalLink, GraduationCap, MapPin } from 'lucide-react';
 
 const NAV = [
   { href: '/admin',              label: 'Overview',      icon: LayoutDashboard },
@@ -10,6 +10,7 @@ const NAV = [
   { href: '/admin/bookings',     label: 'Bookings',      icon: CalendarCheck },
   { href: '/admin/users',        label: 'Users',         icon: Users },
   { href: '/admin/universities', label: 'Universities',  icon: GraduationCap },
+  { href: '/admin/residence-areas', label: 'Residence areas', icon: MapPin },
 ];
 
 export default function AdminSidebar() {

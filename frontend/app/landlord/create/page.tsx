@@ -1,14 +1,15 @@
 'use client';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import LandlordGuard from '../../../components/LandlordGuard';
 import Navbar from '../../../components/Navbar';
 import api from '../../../lib/api';
-import { Plus, Trash2, Loader2, MapPin, ArrowLeft, Upload, X } from 'lucide-react';
+import { Plus, Trash2, Loader2, ArrowLeft, Upload, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useUniversities } from '../../../hooks/useUniversities';
+import type { ResidenceArea } from '../../../types';
 
 const LocationPicker = dynamic(() => import('../../../components/LocationPicker'), {
   ssr: false,
@@ -34,6 +35,7 @@ const EMPTY_ROOM: RoomForm = {
 export default function CreateHostel() {
   const router = useRouter();
   const { universities } = useUniversities();
+  const [residenceAreas, setResidenceAreas] = useState<ResidenceArea[]>([]);
   const [step, setStep]       = useState(1);
   const [loading, setLoading] = useState(false);
 
@@ -45,6 +47,7 @@ export default function CreateHostel() {
     latitude:       '',
     longitude:      '',
     track:          'A',
+    residence_area_id: '',
   });
 
   const [rooms, setRooms]         = useState<RoomForm[]>([{ ...EMPTY_ROOM }]);
@@ -52,6 +55,10 @@ export default function CreateHostel() {
 
   const setH = (key: string, val: string) =>
     setHostel(prev => ({ ...prev, [key]: val }));
+
+  useEffect(() => {
+    api.get('/residence-areas').then(r => setResidenceAreas(r.data)).catch(() => {});
+  }, []);
 
   const addRoom = () => setRooms(prev => [...prev, { ...EMPTY_ROOM }]);
 
@@ -86,7 +93,7 @@ export default function CreateHostel() {
   const uploadImages = async (roomId: number, files: File[]) => {
     const formData = new FormData();
     files.forEach(f => formData.append('images', f));
-    await api.post(`/upload/rooms/${roomId}`, formData, {
+    await api.post(`/uploads/rooms/${roomId}`, formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   };
@@ -106,13 +113,14 @@ export default function CreateHostel() {
       // 1. Create hostel
       const hRes = await api.post('/hostels', {
         ...hostel,
+        residence_area_id: hostel.residence_area_id ? Number(hostel.residence_area_id) : null,
         latitude:  parseFloat(hostel.latitude)  || 5.6502,
         longitude: parseFloat(hostel.longitude) || -0.1869,
       });
       const hostelId = hRes.data.hostel.id;
 
       // 2. Bulk create rooms
-      const rRes = await api.post(`/hostels/${hostelId}/rooms/bulk`, {
+      const rRes = await api.post(`/rooms/${hostelId}/rooms/bulk`, {
         rooms: rooms.map(r => ({
           ...r,
           price:         parseFloat(r.price),
@@ -234,6 +242,18 @@ export default function CreateHostel() {
                     onChange={e => setH('hostel_address', e.target.value)}
                     placeholder="e.g. Legon Road, East Legon, Accra"
                     className={inputClass} style={inputStyle} />
+                </div>
+
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                    Residence area
+                  </label>
+                  <select value={hostel.residence_area_id}
+                    onChange={e => setH('residence_area_id', e.target.value)}
+                    className={inputClass} style={inputStyle}>
+                    <option value="">Select area</option>
+                    {residenceAreas.map(area => <option key={area.id} value={area.id}>{area.name} · {area.university_name}</option>)}
+                  </select>
                 </div>
 
                 <div>

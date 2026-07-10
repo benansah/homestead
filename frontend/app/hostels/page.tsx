@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import api from '../../lib/api';
@@ -11,7 +11,7 @@ import {
   ChevronDown, Loader2, ShieldCheck, Bookmark,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Hostel } from '../../types';
+import { Hostel, ResidenceArea, University } from '../../types';
 import { useUniversities } from '../../hooks/useUniversities';
 import { useAuth } from '../../context/AuthContext';
 
@@ -32,8 +32,9 @@ const UNI_SHORT: Record<string, string> = {
 interface Filters {
   university: string; min_price: string; max_price: string;
   gender_policy: string; room_type: string; is_verified: string;
+  residence_area: string;
 }
-const EMPTY: Filters = { university: '', min_price: '', max_price: '', gender_policy: '', room_type: '', is_verified: '' };
+const EMPTY: Filters = { university: '', min_price: '', max_price: '', gender_policy: '', room_type: '', is_verified: '', residence_area: '' };
 
 const SL: React.CSSProperties = {
   fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
@@ -81,88 +82,19 @@ function Chip({ label, icon, onRemove }: { label: string; icon?: React.ReactNode
   );
 }
 
-function HostelsContent() {
-  const searchParams = useSearchParams();
-  const { universities } = useUniversities();
-  const { user } = useAuth();
-  const [hostels, setHostels] = useState<Hostel[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<Filters>({ ...EMPTY, university: searchParams.get('university') || '' });
-  const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
-  const [sortBy, setSortBy] = useState('recommended');
-  const [radiusBanner, setRadiusBanner] = useState('');
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [saveLabel, setSaveLabel] = useState('');
-  const [savingSearch, setSavingSearch] = useState(false);
-  const [hoveredButton, setHoveredButton] = useState<string | null>(null);
+interface SidebarProps {
+  filters: Filters;
+  setF: (k: keyof Filters, v: string) => void;
+  setMulti: (patch: Partial<Filters>) => void;
+  clearAll: () => void;
+  activeCount: number;
+  universities: University[];
+  residenceAreas: ResidenceArea[];
+  visibleAreas: ResidenceArea[];
+}
 
-  const [hoveredUni, setHoveredUni] = useState<string | null>(null);
-
-  const sorted = [...hostels].sort((a, b) => {
-    if (sortBy === 'price_asc') return (a.min_price || 0) - (b.min_price || 0);
-    if (sortBy === 'price_desc') return (b.min_price || 0) - (a.min_price || 0);
-    if (sortBy === 'rating') return (b.avg_rating || 0) - (a.avg_rating || 0);
-    return 0;
-  });
-
-  const doSearch = async (f: Filters) => {
-    try {
-      setLoading(true);
-      setRadiusBanner('');
-      const q = new URLSearchParams(
-        Object.fromEntries(Object.entries(f).filter(([, v]) => v !== ''))
-      ).toString();
-      const res = await api.get(`/search${q ? '?' + q : ''}`);
-      setHostels(res.data.hostels || []);
-    } catch { toast.error('Failed to load hostels'); }
-    finally { setLoading(false); }
-  };
-
-  const handleRadiusSearch = async (lat: number, lng: number, radius_km: number) => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/search?lat=${lat}&lng=${lng}&radius_km=${radius_km}`);
-      setHostels(res.data.hostels || []);
-      setRadiusBanner(`Showing results within ${radius_km}km of map centre`);
-    } catch { toast.error('Failed to search area'); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { doSearch(filters); }, []);
-
-  const setF = (k: keyof Filters, v: string) => {
-    const n = { ...filters, [k]: v }; setFilters(n); doSearch(n);
-  };
-  const setMulti = (patch: Partial<Filters>) => {
-    const n = { ...filters, ...patch }; setFilters(n); doSearch(n);
-  };
-  const clearAll = () => { setFilters(EMPTY); doSearch(EMPTY); };
-  const activeCount = Object.values(filters).filter(Boolean).length;
-  const hasChips = !!(filters.gender_policy || filters.is_verified || filters.min_price || filters.max_price);
-
-  const handleSaveSearch = async () => {
-    if (!user) { toast.error('Log in to save searches'); return; }
-    try {
-      setSavingSearch(true);
-      await api.post('/saved-searches', {
-        label: saveLabel || filters.university || 'My search',
-        university: filters.university || null,
-        min_price: filters.min_price || null,
-        max_price: filters.max_price || null,
-        gender_policy: filters.gender_policy || null,
-      });
-      toast.success('Search saved! We\'ll email you when a matching hostel is listed.');
-      setShowSaveModal(false);
-      setSaveLabel('');
-    } catch {
-      toast.error('Failed to save search');
-    } finally {
-      setSavingSearch(false);
-    }
-  };
-
-  const Sidebar = () => (
+function Sidebar({ filters, setF, setMulti, clearAll, activeCount, universities, residenceAreas, visibleAreas }: SidebarProps) {
+  return (
     <div style={{ width: 240, flexShrink: 0 }}>
       <p style={SL}>Price (GHS/yr)</p>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -183,6 +115,11 @@ function HostelsContent() {
           </label>
         ))}
       </div>
+      <p style={SL}>Residence area</p>
+      <select value={filters.residence_area} onChange={e => setF('residence_area', e.target.value)} style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, marginBottom: 20 }}>
+        <option value="">Any area</option>
+        {visibleAreas.map(area => <option key={area.id} value={area.name}>{area.name}</option>)}
+      </select>
       <p style={SL}>Gender policy</p>
       <div style={{ marginBottom: 20 }}>
         {([['Male', 'Male only'], ['Female', 'Female only'], ['Both', 'Mixed']] as const).map(([val, label]) => (
@@ -208,6 +145,95 @@ function HostelsContent() {
       )}
     </div>
   );
+}
+
+function HostelsContent() {
+  const searchParams = useSearchParams();
+  const { universities } = useUniversities();
+  const { user } = useAuth();
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [residenceAreas, setResidenceAreas] = useState<ResidenceArea[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<Filters>({ ...EMPTY, university: searchParams.get('university') || '' });
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [sortBy, setSortBy] = useState('recommended');
+  const [radiusBanner, setRadiusBanner] = useState('');
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveLabel, setSaveLabel] = useState('');
+  const [savingSearch, setSavingSearch] = useState(false);
+  const [hoveredButton, setHoveredButton] = useState<string | null>(null);
+
+  const [hoveredUni, setHoveredUni] = useState<string | null>(null);
+
+  const sorted = [...hostels].sort((a, b) => {
+    if (sortBy === 'price_asc') return (a.min_price || 0) - (b.min_price || 0);
+    if (sortBy === 'price_desc') return (b.min_price || 0) - (a.min_price || 0);
+    if (sortBy === 'rating') return (b.avg_rating || 0) - (a.avg_rating || 0);
+    return 0;
+  });
+
+  const doSearch = useCallback(async (f: Filters) => {
+    try {
+      setLoading(true);
+      setRadiusBanner('');
+      const q = new URLSearchParams(
+        Object.fromEntries(Object.entries(f).filter(([, v]) => v !== ''))
+      ).toString();
+      const res = await api.get(`/search${q ? '?' + q : ''}`);
+      setHostels(res.data.hostels || []);
+    } catch { toast.error('Failed to load hostels'); }
+    finally { setLoading(false); }
+  }, []);
+
+  const handleRadiusSearch = async (lat: number, lng: number, radius_km: number) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/search?lat=${lat}&lng=${lng}&radius_km=${radius_km}`);
+      setHostels(res.data.hostels || []);
+      setRadiusBanner(`Showing results within ${radius_km}km of map centre`);
+    } catch { toast.error('Failed to search area'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { void doSearch(filters); }, [doSearch, filters]);
+
+  useEffect(() => {
+    api.get('/residence-areas').then(res => setResidenceAreas(res.data)).catch(() => setResidenceAreas([]));
+  }, []);
+
+  const setF = (k: keyof Filters, v: string) => {
+    const n = { ...filters, [k]: v }; setFilters(n); doSearch(n);
+  };
+  const setMulti = (patch: Partial<Filters>) => {
+    const n = { ...filters, ...patch }; setFilters(n); doSearch(n);
+  };
+  const clearAll = () => { setFilters(EMPTY); doSearch(EMPTY); };
+  const activeCount = Object.values(filters).filter(Boolean).length;
+  const hasChips = !!(filters.gender_policy || filters.is_verified || filters.min_price || filters.max_price || filters.residence_area);
+  const visibleAreas = residenceAreas.filter(area => !filters.university || area.university_name === filters.university);
+
+  const handleSaveSearch = async () => {
+    if (!user) { toast.error('Log in to save searches'); return; }
+    try {
+      setSavingSearch(true);
+      await api.post('/saved-searches', {
+        label: saveLabel || filters.university || 'My search',
+        university: filters.university || null,
+        min_price: filters.min_price || null,
+        max_price: filters.max_price || null,
+        gender_policy: filters.gender_policy || null,
+        residence_area: filters.residence_area || null,
+      });
+      toast.success('Search saved! We\'ll email you when a matching hostel is listed.');
+      setShowSaveModal(false);
+      setSaveLabel('');
+    } catch {
+      toast.error('Failed to save search');
+    } finally {
+      setSavingSearch(false);
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'white' }}>
@@ -346,6 +372,9 @@ function HostelsContent() {
           {/* Active filter chips (scroll horizontally, flex-1) */}
           {hasChips && (
             <div className="h-scroll" style={{ display: 'flex', gap: 6, flex: 1 }}>
+              {filters.residence_area && (
+                <Chip label={filters.residence_area} onRemove={() => setF('residence_area', '')} />
+              )}
               {filters.gender_policy && (
                 <Chip label={filters.gender_policy === 'Both' ? 'Mixed' : `${filters.gender_policy} only`} onRemove={() => setF('gender_policy', '')} />
               )}
@@ -421,7 +450,18 @@ function HostelsContent() {
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: 'clamp(20px,4vw,32px) clamp(16px,3vw,24px) 60px', display: 'flex', gap: 36 }}>
 
         {/* Desktop sidebar */}
-        <div className="hidden lg:block" style={{ flexShrink: 0 }}><Sidebar /></div>
+        <div className="hidden lg:block" style={{ flexShrink: 0 }}>
+          <Sidebar
+            filters={filters}
+            setF={setF}
+            setMulti={setMulti}
+            clearAll={clearAll}
+            activeCount={activeCount}
+            universities={universities}
+            residenceAreas={residenceAreas}
+            visibleAreas={visibleAreas}
+          />
+        </div>
 
         {/* Mobile filter drawer */}
         {showFilters && (
@@ -468,7 +508,16 @@ function HostelsContent() {
                   }} />
                 </button>
               </div>
-              <Sidebar />
+              <Sidebar
+                filters={filters}
+                setF={setF}
+                setMulti={setMulti}
+                clearAll={clearAll}
+                activeCount={activeCount}
+                universities={universities}
+                residenceAreas={residenceAreas}
+                visibleAreas={visibleAreas}
+              />
             </div>
           </div>
         )}

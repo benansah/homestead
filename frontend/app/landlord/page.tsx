@@ -57,7 +57,7 @@ function IconBtn({ href, onClick, icon, label, variant = 'ghost' }: {
     : <button onClick={onClick} style={{ ...s, border: (styles[variant] as any).border }}>{icon}{label}</button>;
 }
 
-function HostelCard({ hostel, onDelete }: { hostel: any; onDelete: (id: number) => void }) {
+function HostelCard({ hostel, onDelete, canView }: { hostel: any; onDelete: (id: number) => void; canView: boolean }) {
   const cfg = STATUS_CFG[hostel.status] ?? STATUS_CFG.pending;
   const handleDelete = async () => {
     if (!confirm(`Delete "${hostel.hostel_name}"? This cannot be undone.`)) return;
@@ -114,7 +114,9 @@ function HostelCard({ hostel, onDelete }: { hostel: any; onDelete: (id: number) 
 
         {/* Actions */}
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-          <IconBtn href={`/hostels/${hostel.id}`} icon={<Eye size={13} />} label="View" />
+          {canView && (
+            <IconBtn href={`/hostels/${hostel.id}`} icon={<Eye size={13} />} label="View" />
+          )}
           <IconBtn href={`/landlord/edit-hostel/${hostel.id}`} icon={<Pencil size={13} />} label="Edit" />
           <IconBtn onClick={() => bulkAvail(true)}  icon={<CheckCircle2 size={13} />} label="All available" variant="green" />
           <IconBtn onClick={() => bulkAvail(false)} icon={<EyeOff size={13} />}       label="Mark full"      variant="amber" />
@@ -212,7 +214,7 @@ export default function LandlordDashboard() {
     if (user) load();
   }, [user]);
 
-  const totalRooms    = hostels.reduce((s: number, h: any) => s + (h.total_rooms || 0), 0);
+  const totalRooms    = hostels.reduce((s: number, h: any):number => s + (Number(h.total_rooms) || 0), 0);
   const pendingCount  = hostels.filter(h => h.status === 'pending').length;
   const approvedCount = hostels.filter(h => h.status === 'approved').length;
   const totalViews    = hostels.reduce((s: number, h: any) => s + (h.view_count || 0), 0);
@@ -319,6 +321,7 @@ export default function LandlordDashboard() {
                   <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
                     {hostels.map(hostel => (
                       <HostelCard key={hostel.id} hostel={hostel}
+                        canView={user?.role === 'student'}
                         onDelete={(id) => setHostels(prev => prev.filter(h => h.id !== id))} />
                     ))}
                   </div>

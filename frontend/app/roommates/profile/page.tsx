@@ -36,7 +36,12 @@ function OptionPicker({ options, value, onChange }: {
   onChange: (v: string) => void;
 }) {
   return (
-    <div className="option-picker-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 12 }}>
+    <div className="option-picker-grid" style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(3, 1fr)',
+        gap: 12,
+       }}>
+
       {options.map(opt => (
         <button key={opt.value} type="button" onClick={() => onChange(opt.value)}
           style={{
@@ -44,6 +49,20 @@ function OptionPicker({ options, value, onChange }: {
             border: `2px solid ${value === opt.value ? 'var(--blue)' : 'var(--border)'}`,
             background: value === opt.value ? 'var(--blue-light)' : 'white',
             transition: 'all 0.15s',
+          }}
+          onMouseEnter={e => {
+            const el = e.currentTarget as HTMLElement;
+            if (!el) return;
+            if (! (value === opt.value)) el.style.background = '#F8FAFC';
+            el.style.transform = 'translateY(-3px)';
+            el.style.boxShadow = '0 6px 18px rgba(15,23,42,0.06)';
+          }}
+          onMouseLeave={e => {
+            const el = e.currentTarget as HTMLElement;
+            if (!el) return;
+            el.style.background = value === opt.value ? 'var(--blue-light)' : 'white';
+            el.style.transform = '';
+            el.style.boxShadow = '';
           }}>
           <p style={{ fontSize: 15, fontWeight: 700, color: value === opt.value ? 'var(--blue)' : '#0F172A', marginBottom: 4 }}>
             {opt.label}
@@ -173,7 +192,9 @@ export default function RoommateProfilePage() {
             <div style={{ display: 'flex', gap: 12 }}>
               {['Male', 'Female', 'Other'].map(g => (
                 <button key={g} type="button" onClick={() => setGender(g)}
-                  style={{ flex: 1, padding: '14px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', border: `2px solid ${gender === g ? 'var(--blue)' : 'var(--border)'}`, background: gender === g ? 'var(--blue-light)' : 'white', color: gender === g ? 'var(--blue)' : '#374151', transition: 'all 0.15s' }}>
+                  style={{ flex: 1, padding: '14px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', border: `2px solid ${gender === g ? 'var(--blue)' : 'var(--border)'}`, background: gender === g ? 'var(--blue-light)' : 'white', color: gender === g ? 'var(--blue)' : '#374151', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; if (el && gender !== g) { el.style.background = '#F8FAFC'; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 6px 18px rgba(15,23,42,0.06)'; } }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; if (el) { el.style.background = gender === g ? 'var(--blue-light)' : 'white'; el.style.transform = ''; el.style.boxShadow = ''; } }}>
                   {g}
                 </button>
               ))}
@@ -205,7 +226,9 @@ export default function RoommateProfilePage() {
             <div style={{ display: 'flex', gap: 12 }}>
               {[{ value: 'same', label: '👥 Same gender only' }, { value: 'any', label: '🌍 Any gender' }].map(opt => (
                 <button key={opt.value} type="button" onClick={() => setGenderPref(opt.value)}
-                  style={{ flex: 1, padding: '14px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', border: `2px solid ${genderPref === opt.value ? 'var(--blue)' : 'var(--border)'}`, background: genderPref === opt.value ? 'var(--blue-light)' : 'white', color: genderPref === opt.value ? 'var(--blue)' : '#374151', transition: 'all 0.15s' }}>
+                  style={{ flex: 1, padding: '14px', borderRadius: 14, fontSize: 16, fontWeight: 700, cursor: 'pointer', border: `2px solid ${genderPref === opt.value ? 'var(--blue)' : 'var(--border)'}`, background: genderPref === opt.value ? 'var(--blue-light)' : 'white', color: genderPref === opt.value ? 'var(--blue)' : '#374151', transition: 'all 0.15s' }}
+                  onMouseEnter={e => { const el = e.currentTarget as HTMLElement; if (el && genderPref !== opt.value) { el.style.background = '#F8FAFC'; el.style.transform = 'translateY(-3px)'; el.style.boxShadow = '0 6px 18px rgba(15,23,42,0.06)'; } }}
+                  onMouseLeave={e => { const el = e.currentTarget as HTMLElement; if (el) { el.style.background = genderPref === opt.value ? 'var(--blue-light)' : 'white'; el.style.transform = ''; el.style.boxShadow = ''; } }}>
                   {opt.label}
                 </button>
               ))}
@@ -219,14 +242,18 @@ export default function RoommateProfilePage() {
               placeholder="e.g. 2nd year CS student at UG. I love music but keep it quiet at night. Looking for someone tidy and respectful."
               style={{ width: '100%', border: '1.5px solid var(--border)', borderRadius: 12, padding: '14px 16px', fontSize: 15, color: 'var(--text)', fontFamily: 'inherit', resize: 'none', outline: 'none', lineHeight: 1.6 }}
               onFocus={e => (e.target.style.borderColor = 'var(--blue)')}
-              onBlur={e => (e.target.style.borderColor = 'var(--border)')} />
+              onBlur={e => (e.target.style.borderColor = 'var(--border)')}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLTextAreaElement; el.style.borderColor = 'var(--blue)'; }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLTextAreaElement; if (document.activeElement !== el) el.style.borderColor = 'var(--border)'; }} />
             <p style={{ fontSize: 13, color: '#94A3B8', textAlign: 'right', marginTop: 6 }}>{bio.length}/300</p>
           </Card>
 
           {/* Submit */}
           <div style={{ display: 'flex', gap: 12 }}>
             <button type="submit" disabled={saving}
-              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, boxShadow: 'var(--sh-blue)' }}>
+              style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 10, padding: '16px', background: 'var(--blue)', color: 'white', border: 'none', borderRadius: 14, fontSize: 17, fontWeight: 700, cursor: 'pointer', opacity: saving ? 0.7 : 1, boxShadow: 'var(--sh-blue)', transition: 'transform 0.15s, box-shadow 0.15s, background 0.15s' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLElement; if (!saving) { el.style.transform = 'translateY(-2px)'; el.style.boxShadow = '0 14px 32px rgba(0, 106, 255, 0.24)'; el.style.background = '#005ce6'; } }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = 'var(--sh-blue)'; el.style.background = 'var(--blue)'; }}>
               {saving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
               {existing ? 'Save changes' : 'Create profile'}
             </button>
@@ -244,7 +271,9 @@ export default function RoommateProfilePage() {
               style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8,
                 padding: '14px', border: '1.5px solid var(--border)', borderRadius: 14,
                 fontSize: 15, fontWeight: 600, color: '#374151', textDecoration: 'none',
-                background: 'white', transition: 'background 0.15s' }}>
+                background: 'white', transition: 'background 0.15s, transform 0.15s, box-shadow 0.15s' }}
+              onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.transform = 'translateY(-4px)'; el.style.boxShadow = '0 10px 30px rgba(15,23,42,0.08)'; el.style.background = '#FBFDFF'; }}
+              onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.transform = ''; el.style.boxShadow = ''; el.style.background = 'white'; }}>
               <Building2 size={16} style={{ color: 'var(--blue)' }} />
               Browse hostels at {user.university} →
             </Link>

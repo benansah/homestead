@@ -42,14 +42,14 @@ export default function AboutPage() {
           <h2 style={{ fontSize: 'clamp(22px,4vw,36px)', fontWeight: 900, color: '#0F172A', marginBottom: 'clamp(28px,5vw,48px)', textAlign: 'center', fontFamily: 'Georgia,serif' }}>
             What we stand for
           </h2>
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20 }}>
+          <div className="values-grid" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 20, transition: 'transform 200ms ease, box-shadow 200ms ease' }}>
             {[
               { icon: <ShieldCheck size={26} style={{ color: 'var(--blue)' }} />,  title: 'Transparency',   desc: 'Every listing is manually verified. No fake rooms, no ghost landlords.' },
               { icon: <Users size={26} style={{ color: '#8B5CF6' }} />,            title: 'Accessibility',  desc: 'Equal access for every student, regardless of background or connections.' },
               { icon: <Heart size={26} style={{ color: '#EF4444' }} />,            title: 'Student-first',  desc: 'Every decision prioritises student safety and affordability.' },
               { icon: <MapPin size={26} style={{ color: '#10B981' }} />,           title: 'Local focus',    desc: 'Built for Ghana, by people who understand Ghanaian universities.' },
             ].map(({ icon, title, desc }) => (
-              <div key={title} style={{ background: 'white', borderRadius: 18, padding: 'clamp(20px,3vw,28px)', border: '1px solid var(--border)', boxShadow: 'var(--sh-sm)' }}>
+              <div key={title} className="value-card">
                 <div style={{ width: 52, height: 52, borderRadius: 14, background: 'var(--surface)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 16 }}>{icon}</div>
                 <h3 style={{ fontSize: 17, fontWeight: 800, color: '#0F172A', marginBottom: 8 }}>{title}</h3>
                 <p style={{ fontSize: 14, color: '#64748B', lineHeight: 1.7 }}>{desc}</p>
@@ -85,6 +85,23 @@ export default function AboutPage() {
           <Link href="/register" className="btn btn-secondary btn-lg">Create account</Link>
         </div>
       </section>
+
+      <style jsx>{`
+        .value-card {
+          background: white;
+          border-radius: 18px;
+          padding: clamp(20px, 3vw, 28px);
+          border: 1px solid var(--border);
+          box-shadow: var(--sh-sm);
+          transition: transform 200ms ease, box-shadow 200ms ease, border-color 200ms ease;
+        }
+
+        .value-card:hover {
+          transform: translateY(-6px);
+          border-color: rgba(59, 130, 246, 0.25);
+          box-shadow: 0 22px 45px rgba(15, 23, 42, 0.12);
+        }
+      `}</style>
 
       <Footer />
     </div>

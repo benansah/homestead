@@ -71,7 +71,7 @@ export default function ListRoomPage() {
       const hostelId = hRes.data.hostel.id;
 
       // 2. Create the room
-      const rRes = await api.post(`/hostels/${hostelId}/rooms/bulk`, {
+      const rRes = await api.post(`/rooms/${hostelId}/rooms/bulk`, {
         rooms: [{
           room_type:     form.room_type,
           price:         parseFloat(form.price),
@@ -87,7 +87,7 @@ export default function ListRoomPage() {
       if (images.length > 0 && roomId) {
         const fd = new FormData();
         images.forEach(f => fd.append('images', f));
-        await api.post(`/upload/rooms/${roomId}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).catch(() => {});
+        await api.post(`/uploads/rooms/${roomId}`, fd, { headers: { 'Content-Type': 'multipart/form-data' } }).catch(() => {});
       }
 
       // 4. Upload 360° tour if provided

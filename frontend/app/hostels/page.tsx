@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, Suspense } from 'react';
+import { useState, useEffect, Suspense, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { useSearchParams } from 'next/navigation';
 import api from '../../lib/api';
@@ -11,9 +11,10 @@ import {
   ChevronDown, Loader2, ShieldCheck, Bookmark,
 } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { Hostel } from '../../types';
+import { Hostel, ResidenceArea, University } from '../../types';
 import { useUniversities } from '../../hooks/useUniversities';
 import { useAuth } from '../../context/AuthContext';
+
 
 const BrowseMap = dynamic(() => import('../../components/BrowseMap'), {
   ssr: false,
@@ -23,13 +24,17 @@ const BrowseMap = dynamic(() => import('../../components/BrowseMap'), {
 const UNI_SHORT: Record<string, string> = {
   'University of Ghana': 'UG', 'KNUST': 'KNUST', 'UCC': 'UCC',
   'University of Education': 'UEW', 'Ashesi University': 'Ashesi',
+   'University of Health and Allied Sciences': 'UHAS',
 };
+
+
 
 interface Filters {
   university: string; min_price: string; max_price: string;
   gender_policy: string; room_type: string; is_verified: string;
+  residence_area: string;
 }
-const EMPTY: Filters = { university: '', min_price: '', max_price: '', gender_policy: '', room_type: '', is_verified: '' };
+const EMPTY: Filters = { university: '', min_price: '', max_price: '', gender_policy: '', room_type: '', is_verified: '', residence_area: '' };
 
 const SL: React.CSSProperties = {
   fontSize: 11, fontWeight: 700, color: 'var(--text-muted)',
@@ -37,100 +42,59 @@ const SL: React.CSSProperties = {
 };
 
 function Chip({ label, icon, onRemove }: { label: string; icon?: React.ReactNode; onRemove: () => void }) {
+  const [hover, setHover] = useState(false);
   return (
-    <span style={{ display: 'inline-flex', alignItems: 'center', gap: 5, padding: '4px 8px 4px 10px',
-      borderRadius: 99, background: 'var(--blue-light)', color: 'var(--blue)',
-      fontSize: 12, fontWeight: 600, flexShrink: 0, whiteSpace: 'nowrap' }}>
+    <span style={{ 
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: 5,
+                  padding: '4px 8px 4px 10px',
+                  borderRadius: 99,
+                  background:  hover ? "var(--blue)" : 'var(--blue-light)',
+                  color:  hover ? "white" : 'var(--blue)',
+                  fontSize: 12, fontWeight: 600,
+                  flexShrink: 0,
+                  whiteSpace: 'nowrap'
+       }}
+      
+      onMouseEnter={() => setHover(true)}
+      onMouseLeave={() => setHover(false)}
+
+      >
       {icon}{label}
       <button onClick={onRemove}
-        style={{ display: 'flex', alignItems: 'center', justifyContent: 'center',
-          width: 16, height: 16, borderRadius: '50%', background: 'rgba(0,106,255,0.15)',
-          border: 'none', cursor: 'pointer', marginLeft: 2 }}>
+                style={{ 
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  width: 16, height: 16,
+                  borderRadius: '50%',
+                  background: 'rgba(0,106,255,0.15)',
+                  border: 'none',
+                  cursor: 'pointer',
+                  marginLeft: 2
+             }}
+              
+             >
         <X size={10} style={{ color: 'var(--blue)' }} />
       </button>
     </span>
   );
 }
 
-function HostelsContent() {
-  const searchParams = useSearchParams();
-  const { universities } = useUniversities();
-  const { user } = useAuth();
-  const [hostels, setHostels] = useState<Hostel[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState<Filters>({ ...EMPTY, university: searchParams.get('university') || '' });
-  const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
-  const [sortBy, setSortBy] = useState('recommended');
-  const [radiusBanner, setRadiusBanner] = useState('');
-  const [showSaveModal, setShowSaveModal] = useState(false);
-  const [saveLabel, setSaveLabel] = useState('');
-  const [savingSearch, setSavingSearch] = useState(false);
+interface SidebarProps {
+  filters: Filters;
+  setF: (k: keyof Filters, v: string) => void;
+  setMulti: (patch: Partial<Filters>) => void;
+  clearAll: () => void;
+  activeCount: number;
+  universities: University[];
+  residenceAreas: ResidenceArea[];
+  visibleAreas: ResidenceArea[];
+}
 
-  const sorted = [...hostels].sort((a, b) => {
-    if (sortBy === 'price_asc') return (a.min_price || 0) - (b.min_price || 0);
-    if (sortBy === 'price_desc') return (b.min_price || 0) - (a.min_price || 0);
-    if (sortBy === 'rating') return (b.avg_rating || 0) - (a.avg_rating || 0);
-    return 0;
-  });
-
-  const doSearch = async (f: Filters) => {
-    try {
-      setLoading(true);
-      setRadiusBanner('');
-      const q = new URLSearchParams(
-        Object.fromEntries(Object.entries(f).filter(([, v]) => v !== ''))
-      ).toString();
-      const res = await api.get(`/search${q ? '?' + q : ''}`);
-      setHostels(res.data.hostels || []);
-    } catch { toast.error('Failed to load hostels'); }
-    finally { setLoading(false); }
-  };
-
-  const handleRadiusSearch = async (lat: number, lng: number, radius_km: number) => {
-    try {
-      setLoading(true);
-      const res = await api.get(`/search?lat=${lat}&lng=${lng}&radius_km=${radius_km}`);
-      setHostels(res.data.hostels || []);
-      setRadiusBanner(`Showing results within ${radius_km}km of map centre`);
-    } catch { toast.error('Failed to search area'); }
-    finally { setLoading(false); }
-  };
-
-  useEffect(() => { doSearch(filters); }, []);
-
-  const setF = (k: keyof Filters, v: string) => {
-    const n = { ...filters, [k]: v }; setFilters(n); doSearch(n);
-  };
-  const setMulti = (patch: Partial<Filters>) => {
-    const n = { ...filters, ...patch }; setFilters(n); doSearch(n);
-  };
-  const clearAll = () => { setFilters(EMPTY); doSearch(EMPTY); };
-  const activeCount = Object.values(filters).filter(Boolean).length;
-  const hasChips = !!(filters.gender_policy || filters.is_verified || filters.min_price || filters.max_price);
-
-  const handleSaveSearch = async () => {
-    if (!user) { toast.error('Log in to save searches'); return; }
-    try {
-      setSavingSearch(true);
-      await api.post('/saved-searches', {
-        label: saveLabel || filters.university || 'My search',
-        university: filters.university || null,
-        min_price: filters.min_price || null,
-        max_price: filters.max_price || null,
-        gender_policy: filters.gender_policy || null,
-      });
-      toast.success('Search saved! We\'ll email you when a matching hostel is listed.');
-      setShowSaveModal(false);
-      setSaveLabel('');
-    } catch {
-      toast.error('Failed to save search');
-    } finally {
-      setSavingSearch(false);
-    }
-  };
-
-  const Sidebar = () => (
+function Sidebar({ filters, setF, setMulti, clearAll, activeCount, universities, residenceAreas, visibleAreas }: SidebarProps) {
+  return (
     <div style={{ width: 240, flexShrink: 0 }}>
       <p style={SL}>Price (GHS/yr)</p>
       <div style={{ display: 'flex', gap: 8, marginBottom: 20 }}>
@@ -151,6 +115,11 @@ function HostelsContent() {
           </label>
         ))}
       </div>
+      <p style={SL}>Residence area</p>
+      <select value={filters.residence_area} onChange={e => setF('residence_area', e.target.value)} style={{ width: '100%', padding: '9px 12px', border: '1px solid var(--border)', borderRadius: 10, fontSize: 13, marginBottom: 20 }}>
+        <option value="">Any area</option>
+        {visibleAreas.map(area => <option key={area.id} value={area.name}>{area.name}</option>)}
+      </select>
       <p style={SL}>Gender policy</p>
       <div style={{ marginBottom: 20 }}>
         {([['Male', 'Male only'], ['Female', 'Female only'], ['Both', 'Mixed']] as const).map(([val, label]) => (
@@ -162,6 +131,7 @@ function HostelsContent() {
           </label>
         ))}
       </div>
+
       <label style={{ display: 'flex', alignItems: 'center', gap: 9, padding: '6px 0', cursor: 'pointer' }}>
         <input type="checkbox" checked={filters.is_verified === 'true'}
           onChange={e => setF('is_verified', e.target.checked ? 'true' : '')}
@@ -175,6 +145,95 @@ function HostelsContent() {
       )}
     </div>
   );
+}
+
+function HostelsContent() {
+  const searchParams = useSearchParams();
+  const { universities } = useUniversities();
+  const { user } = useAuth();
+  const [hostels, setHostels] = useState<Hostel[]>([]);
+  const [residenceAreas, setResidenceAreas] = useState<ResidenceArea[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filters, setFilters] = useState<Filters>({ ...EMPTY, university: searchParams.get('university') || '' });
+  const [showFilters, setShowFilters] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'map'>('grid');
+  const [sortBy, setSortBy] = useState('recommended');
+  const [radiusBanner, setRadiusBanner] = useState('');
+  const [showSaveModal, setShowSaveModal] = useState(false);
+  const [saveLabel, setSaveLabel] = useState('');
+  const [savingSearch, setSavingSearch] = useState(false);
+  const [hoveredButton, setHoveredButton] = useState<string | null>(null);
+
+  const [hoveredUni, setHoveredUni] = useState<string | null>(null);
+
+  const sorted = [...hostels].sort((a, b) => {
+    if (sortBy === 'price_asc') return (a.min_price || 0) - (b.min_price || 0);
+    if (sortBy === 'price_desc') return (b.min_price || 0) - (a.min_price || 0);
+    if (sortBy === 'rating') return (b.avg_rating || 0) - (a.avg_rating || 0);
+    return 0;
+  });
+
+  const doSearch = useCallback(async (f: Filters) => {
+    try {
+      setLoading(true);
+      setRadiusBanner('');
+      const q = new URLSearchParams(
+        Object.fromEntries(Object.entries(f).filter(([, v]) => v !== ''))
+      ).toString();
+      const res = await api.get(`/search${q ? '?' + q : ''}`);
+      setHostels(res.data.hostels || []);
+    } catch { toast.error('Failed to load hostels'); }
+    finally { setLoading(false); }
+  }, []);
+
+  const handleRadiusSearch = async (lat: number, lng: number, radius_km: number) => {
+    try {
+      setLoading(true);
+      const res = await api.get(`/search?lat=${lat}&lng=${lng}&radius_km=${radius_km}`);
+      setHostels(res.data.hostels || []);
+      setRadiusBanner(`Showing results within ${radius_km}km of map centre`);
+    } catch { toast.error('Failed to search area'); }
+    finally { setLoading(false); }
+  };
+
+  useEffect(() => { void doSearch(filters); }, [doSearch, filters]);
+
+  useEffect(() => {
+    api.get('/residence-areas').then(res => setResidenceAreas(res.data)).catch(() => setResidenceAreas([]));
+  }, []);
+
+  const setF = (k: keyof Filters, v: string) => {
+    const n = { ...filters, [k]: v }; setFilters(n); doSearch(n);
+  };
+  const setMulti = (patch: Partial<Filters>) => {
+    const n = { ...filters, ...patch }; setFilters(n); doSearch(n);
+  };
+  const clearAll = () => { setFilters(EMPTY); doSearch(EMPTY); };
+  const activeCount = Object.values(filters).filter(Boolean).length;
+  const hasChips = !!(filters.gender_policy || filters.is_verified || filters.min_price || filters.max_price || filters.residence_area);
+  const visibleAreas = residenceAreas.filter(area => !filters.university || area.university_name === filters.university);
+
+  const handleSaveSearch = async () => {
+    if (!user) { toast.error('Log in to save searches'); return; }
+    try {
+      setSavingSearch(true);
+      await api.post('/saved-searches', {
+        label: saveLabel || filters.university || 'My search',
+        university: filters.university || null,
+        min_price: filters.min_price || null,
+        max_price: filters.max_price || null,
+        gender_policy: filters.gender_policy || null,
+        residence_area: filters.residence_area || null,
+      });
+      toast.success('Search saved! We\'ll email you when a matching hostel is listed.');
+      setShowSaveModal(false);
+      setSaveLabel('');
+    } catch {
+      toast.error('Failed to save search');
+    } finally {
+      setSavingSearch(false);
+    }
+  };
 
   return (
     <div style={{ minHeight: '100vh', background: 'white' }}>
@@ -215,23 +274,87 @@ function HostelsContent() {
               </div>
             </div>
             <button onClick={() => doSearch(filters)}
-              style={{ padding: '0 24px', background: 'var(--blue)', color: 'white', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+             onMouseEnter={() => setHoveredButton('search')}
+             onMouseLeave={() => setHoveredButton(null)}
+//              style={{ padding: '0 24px', background: 'var(--blue)', color: 'white', fontSize: 14, fontWeight: 700, border: 'none', cursor: 'pointer', flexShrink: 0 }}>
+             style={{ 
+               padding: '0 24px', 
+               background: hoveredButton === 'search' ? '#000080' : 'var(--blue)', 
+               color: 'white', 
+               fontSize: 14, 
+               fontWeight: 700, 
+               border: 'none', 
+               cursor: 'pointer', 
+               flexShrink: 0,
+               transition: 'all 0.2s ease',
+               transform: hoveredButton === 'search' ? 'scale(1.02)' : 'scale(1)'
+             }}
+                >
               Search
             </button>
           </div>
 
           {/* University quick-filter chips */}
           <div className="h-scroll" style={{ display: 'flex', gap: 8, marginTop: 14, paddingBottom: 2 }}>
-            <button onClick={() => setF('university', '')}
-              style={{ flexShrink: 0, padding: '6px 16px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', border: `1.5px solid ${!filters.university ? 'var(--blue)' : 'var(--border)'}`, background: !filters.university ? 'var(--blue)' : 'white', color: !filters.university ? 'white' : '#6B7280', transition: 'all 0.15s' }}>
+            <button
+               onClick={() => setF('university', '')}
+               onMouseEnter={() => setHoveredButton('all-uni')}
+               onMouseLeave={() => setHoveredButton(null)}
+               style={{
+                flexShrink: 0,
+                padding: '6px 16px',
+                borderRadius: 99,
+                fontSize: 12,
+                fontWeight: 700,
+                cursor: 'pointer',
+                border: `1.5px solid ${!filters.university ? 'var(--blue)' : 'var(--border)'}`,
+                background: !filters.university ? 'var(--blue)' : 'white',
+                color: !filters.university ? 'white' : '#6B7280',
+                transition: 'all 0.3s cubic-bezier(0.4, 0, 0.2, 1)',
+                boxShadow: hoveredButton === 'all-uni' ? '0 2px 7px rgba(37,99,235,1)' : 'none'
+               }}
+               >
               All
-            </button>
-            {universities.map(u => (
-              <button key={u.id} onClick={() => setF('university', filters.university === u.name ? '' : u.name)}
-                style={{ flexShrink: 0, padding: '6px 16px', borderRadius: 99, fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', border: `1.5px solid ${filters.university === u.name ? 'var(--blue)' : 'var(--border)'}`, background: filters.university === u.name ? 'var(--blue)' : 'white', color: filters.university === u.name ? 'white' : '#6B7280', transition: 'all 0.15s' }}>
+                </button>
+            {universities.map((u) =>  {
+               const isHovered = hoveredUni === u.name;
+                return (
+              <button key={u.id} onClick={() => setF('university',
+                 filters.university === u.name ? '' : u.name)}
+                
+                 style={{
+                           flexShrink: 0,
+                           padding: '6px 16px',
+                           borderRadius: 99,
+                           fontSize: 12,
+                           fontWeight: 700,
+                           cursor: 'pointer',
+                           whiteSpace: 'nowrap',
+                           border: `1.5px solid ${filters.university === u.name ? 'var(--blue)' : 'var(--border)'}`,
+                            background:
+                             filters.university === u.name
+                             ? "var(--blue)"
+                             : isHovered
+                             ? "var(--blue-light)"
+                             : "white",
+                             color:
+                             filters.university === u.name
+                             ? "white"
+                             : isHovered
+                             ? "var(--blue)"
+                             : "#6B7280",
+                             transition: "all 0.15s",
+                             boxShadow: isHovered
+                             ? "0 4px 12px rgba(0,106,255,0.25)"
+                             : "none",
+                            }}
+                            
+                            onMouseEnter={() => setHoveredUni(u.name)}
+                            onMouseLeave={()  => setHoveredUni(null)}
+                          >
                 {UNI_SHORT[u.name] ?? u.name}
-              </button>
-            ))}
+              </button>);
+           })}
           </div>
         </div>
       </div>
@@ -249,6 +372,9 @@ function HostelsContent() {
           {/* Active filter chips (scroll horizontally, flex-1) */}
           {hasChips && (
             <div className="h-scroll" style={{ display: 'flex', gap: 6, flex: 1 }}>
+              {filters.residence_area && (
+                <Chip label={filters.residence_area} onRemove={() => setF('residence_area', '')} />
+              )}
               {filters.gender_policy && (
                 <Chip label={filters.gender_policy === 'Both' ? 'Mixed' : `${filters.gender_policy} only`} onRemove={() => setF('gender_policy', '')} />
               )}
@@ -285,7 +411,22 @@ function HostelsContent() {
             {/* Save search */}
             {activeCount > 0 && user?.role === 'student' && (
               <button onClick={() => setShowSaveModal(true)}
-                style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '6px 14px', borderRadius: 99, border: '1.5px solid var(--border)', fontSize: 13, fontWeight: 600, cursor: 'pointer', background: 'white', color: 'var(--blue)', whiteSpace: 'nowrap' }}>
+                style={{ 
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: 6,
+                        padding: '6px 14px',
+                        borderRadius: 99,
+                        border: '1.5px solid var(--border)',
+                        fontSize: 13,
+                        fontWeight: 600,
+                        cursor: 'pointer',
+                        background: 'white',
+                        color: 'var(--blue)',
+                        whiteSpace: 'nowrap',
+                        boxShadow: hoveredButton === 'save-search' ? '0 2px 8px rgba(37,99,235,0.8)' : 'none',
+                        transform: hoveredButton === 'save-search' ? 'translateY(-2px)' : 'translateY(0)', 
+                           }}>
                 <Bookmark size={13} /> Save search
               </button>
             )}
@@ -309,7 +450,18 @@ function HostelsContent() {
       <div style={{ maxWidth: 1280, margin: '0 auto', padding: 'clamp(20px,4vw,32px) clamp(16px,3vw,24px) 60px', display: 'flex', gap: 36 }}>
 
         {/* Desktop sidebar */}
-        <div className="hidden lg:block" style={{ flexShrink: 0 }}><Sidebar /></div>
+        <div className="hidden lg:block" style={{ flexShrink: 0 }}>
+          <Sidebar
+            filters={filters}
+            setF={setF}
+            setMulti={setMulti}
+            clearAll={clearAll}
+            activeCount={activeCount}
+            universities={universities}
+            residenceAreas={residenceAreas}
+            visibleAreas={visibleAreas}
+          />
+        </div>
 
         {/* Mobile filter drawer */}
         {showFilters && (
@@ -317,14 +469,55 @@ function HostelsContent() {
             <div style={{ position: 'absolute', inset: 0, background: 'rgba(15,23,42,0.5)', backdropFilter: 'blur(3px)' }}
               onClick={() => setShowFilters(false)} />
             <div style={{ position: 'absolute', left: 0, top: 0, bottom: 0, background: 'white', width: 300, overflowY: 'auto', padding: 20, boxShadow: 'var(--sh-xl)' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
-                <p style={{ fontWeight: 800, fontSize: 17, color: '#0F172A' }}>Filters</p>
-                <button onClick={() => setShowFilters(false)}
-                  style={{ width: 32, height: 32, borderRadius: '50%', background: 'var(--surface)', border: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}>
-                  <X size={15} style={{ color: 'var(--text-muted)' }} />
+              <div style={{
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                marginBottom: 20,
+                paddingBottom: 16,
+                borderBottom: '1px solid var(--border)',
+                gap: 12,
+              }}>
+                <p style={{
+                  fontWeight: 800,
+                  fontSize: 17,
+                  color: '#0F172A',
+                  letterSpacing: '-0.3px',
+                  margin: 0,
+                }}>Filters</p>
+                <button 
+                  onClick={() => setShowFilters(false)}
+                  onMouseEnter={() => setHoveredButton('close-filters')}
+                  onMouseLeave={() => setHoveredButton(null)}
+                  style={{
+                    width: 32,
+                    height: 32,
+                    borderRadius: '50%',
+                    background: hoveredButton === 'close-filters' ? '#F3F4F6' : 'var(--surface)',
+                    border: hoveredButton === 'close-filters' ? '1px solid var(--blue)' : '1px solid var(--border)',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease',
+                    flexShrink: 0,
+                  }}>
+                  <X size={15} style={{
+                    color: hoveredButton === 'close-filters' ? 'var(--blue)' : 'var(--text-muted)',
+                    transition: 'color 0.2s ease',
+                  }} />
                 </button>
               </div>
-              <Sidebar />
+              <Sidebar
+                filters={filters}
+                setF={setF}
+                setMulti={setMulti}
+                clearAll={clearAll}
+                activeCount={activeCount}
+                universities={universities}
+                residenceAreas={residenceAreas}
+                visibleAreas={visibleAreas}
+              />
             </div>
           </div>
         )}

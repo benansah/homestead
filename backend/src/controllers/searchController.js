@@ -10,6 +10,7 @@ export const searchHostels = async (req, res) => {
       gender_policy,
       room_type,
       is_verified,
+      residence_area,
       lat,        // student's latitude
       lng,        // student's longitude
       radius_km,  // default 5km
@@ -43,6 +44,7 @@ export const searchHostels = async (req, res) => {
 
     query += `
       FROM Hostels h
+      LEFT JOIN Residence_areas ra ON ra.id = h.residence_area_id
       LEFT JOIN Rooms r ON r.hostel_id = h.id
       LEFT JOIN Reviews rv ON rv.hostel_id = h.id
       LEFT JOIN Room_images ri ON ri.room_id = r.id
@@ -61,6 +63,10 @@ export const searchHostels = async (req, res) => {
     if (university) {
       query += ` AND h.university ILIKE $${i++}`;
       values.push(`%${university}%`);
+    }
+    if (residence_area) {
+      query += ` AND ra.name ILIKE $${i++}`;
+      values.push(`%${residence_area}%`);
     }
     if (is_verified === 'true') {
       query += ` AND h.is_verified = TRUE`;

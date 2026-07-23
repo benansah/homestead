@@ -86,7 +86,7 @@ export default function AdminDashboard() {
   ] : [];
 
   const STATUS_STYLES: Record<string, { color: string; bg: string; label: string }> = {
-    pending:          { color: '#D97706', bg: '#FEF3C7', label: 'Pending' },
+    pending:          { color: '#D97706', bg: '#FEF3C7', label: 'Awaiting verification' },
     confirmed:        { color: '#2563EB', bg: '#DBEAFE', label: 'Confirmed' },
     contact_released: { color: '#059669', bg: '#D1FAE5', label: 'Contact released' },
     cancelled:        { color: '#DC2626', bg: '#FEE2E2', label: 'Cancelled' },

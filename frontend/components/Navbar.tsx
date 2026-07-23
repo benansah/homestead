@@ -1,5 +1,6 @@
 'use client';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 import { useAuth } from '../context/AuthContext';
 import {
   Heart, Bell, LogOut, LayoutDashboard,
@@ -59,6 +60,18 @@ export default function Navbar() {
   }, [user]);
 
   const close = () => setOpen(false);
+  const pathname = usePathname();
+
+  const isActive = (href: string) => href === '/'
+    ? pathname === '/'
+    : pathname === href || pathname.startsWith(`${href}/`);
+
+  const activeLink: React.CSSProperties = {
+    textDecoration: 'underline',
+    textDecorationThickness: '2px',
+    textUnderlineOffset: '4px',
+    textDecorationColor: 'var(--blue)',
+  };
 
   const desktopLink: React.CSSProperties = {
     display: 'flex', alignItems: 'center', gap: 6,
@@ -114,7 +127,7 @@ export default function Navbar() {
           {/* Desktop nav links — hidden below lg */}
           <div className="hidden lg:flex" style={{ alignItems: 'center', gap: 2, marginLeft: 24 }}>
             {NAV_LINKS.map(({ href, label }) => (
-              <Link key={href} href={href} style={desktopLink}
+              <Link key={href} href={href} style={{ ...desktopLink, ...(isActive(href) ? activeLink : {}) }}
                 onMouseEnter={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'var(--blue-light)'; el.style.color = 'var(--blue)'; }}
                 onMouseLeave={e => { const el = e.currentTarget as HTMLElement; el.style.background = 'transparent'; el.style.color = 'var(--text-2)'; }}>
                 {label}
@@ -128,17 +141,17 @@ export default function Navbar() {
           <div className="hidden md:flex" style={{ alignItems: 'center', gap: 2 }}>
             {user ? (
               <>
-                <Link href="/wishlist" style={desktopLink}
+                <Link href="/wishlist" style={{ ...desktopLink, ...(isActive('/wishlist') ? activeLink : {}) }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--surface)')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
                   <Heart size={15} /> Saved
                 </Link>
-                <Link href="/bookings" style={desktopLink}
+                <Link href="/bookings" style={{ ...desktopLink, ...(isActive('/bookings') ? activeLink : {}) }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--surface)')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
                   Bookings
                 </Link>
-                <Link href="/notifications" style={{ ...desktopLink, padding: '8px 10px', position: 'relative' }}
+                <Link href="/notifications" style={{ ...desktopLink, padding: '8px 10px', position: 'relative', ...(isActive('/notifications') ? activeLink : {}) }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--surface)')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
                   <Bell size={17} />
@@ -152,7 +165,7 @@ export default function Navbar() {
                     }}>{notifCount > 9 ? '9+' : notifCount}</span>
                   )}
                 </Link>
-                <Link href="/profile" style={desktopLink} title="Profile & settings"
+                <Link href="/profile" style={{ ...desktopLink, ...(isActive('/profile') ? activeLink : {}) }} title="Profile & settings"
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--surface)')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
                   <UserCircle size={15} /> Profile
@@ -163,7 +176,7 @@ export default function Navbar() {
                 </div>
                 {(user.role === 'admin' || user.role === 'landlord') && (
                   <Link href={user.role === 'admin' ? '/admin' : '/landlord'}
-                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, fontSize: 13, fontWeight: 700, background: 'var(--blue)', color: 'white', textDecoration: 'none', transition: 'opacity 0.15s', marginLeft: 4, boxShadow: '0 2px 10px rgba(0,106,255,0.35)' }}
+                    style={{ display: 'flex', alignItems: 'center', gap: 6, padding: '8px 14px', borderRadius: 99, fontSize: 13, fontWeight: 700, background: 'var(--blue)', color: 'white', textDecoration: 'none', transition: 'opacity 0.15s', marginLeft: 4, boxShadow: '0 2px 10px rgba(0,106,255,0.35)', ...(isActive(user.role === 'admin' ? '/admin' : '/landlord') ? activeLink : {}) }}
                     onMouseEnter={e => ((e.currentTarget as HTMLElement).style.opacity = '0.88')}
                     onMouseLeave={e => ((e.currentTarget as HTMLElement).style.opacity = '1')}>
                     <LayoutDashboard size={13} />
@@ -179,7 +192,7 @@ export default function Navbar() {
               </>
             ) : (
               <>
-                <Link href="/login" style={{ ...desktopLink, fontWeight: 600 }}
+                <Link href="/login" style={{ ...desktopLink, fontWeight: 600, ...(isActive('/login') ? activeLink : {}) }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--surface)')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
                   Sign in
@@ -195,7 +208,7 @@ export default function Navbar() {
             {/* Bell with badge (logged in only) */}
             {user && (
               <Link href="/notifications"
-                style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 10, color: 'var(--text-2)', textDecoration: 'none' }}>
+                style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center', width: 38, height: 38, borderRadius: 10, color: 'var(--text-2)', textDecoration: 'none', ...(isActive('/notifications') ? activeLink : {}) }}>
                 <Bell size={20} />
                 {notifCount > 0 && (
                   <span style={{
@@ -216,7 +229,7 @@ export default function Navbar() {
               </div>
             ) : (
               <Link href="/login"
-                style={{ fontSize: 14, fontWeight: 600, color: 'var(--blue)', textDecoration: 'none', padding: '6px 10px', borderRadius: 8, background: 'var(--blue-light)' }}>
+                style={{ fontSize: 14, fontWeight: 600, color: 'var(--blue)', textDecoration: 'none', padding: '6px 10px', borderRadius: 8, background: 'var(--blue-light)', ...(isActive('/login') ? activeLink : {}) }}>
                 Sign in
               </Link>
             )}
@@ -295,7 +308,7 @@ export default function Navbar() {
           </p>
           {NAV_LINKS.map(({ href, label, Icon }) => (
             <Link key={href} href={href} onClick={close}
-              style={{ ...drawerRow, color: 'var(--text)' }}
+              style={{ ...drawerRow, color: 'var(--text)', ...(isActive(href) ? activeLink : {}) }}
               onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--surface)')}
               onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
               <span style={iconBox('var(--blue-light)', 'var(--blue-mid)')}>
@@ -337,7 +350,7 @@ export default function Navbar() {
                 ...(user.role === 'landlord' ? [{ href: '/landlord', label: 'My dashboard', Icon: LayoutDashboard, note: null }] : []),
               ].map(({ href, label, Icon, note }) => (
                 <Link key={href} href={href} onClick={close}
-                  style={{ ...drawerRow }}
+                  style={{ ...drawerRow, ...(isActive(href) ? activeLink : {}) }}
                   onMouseEnter={e => ((e.currentTarget as HTMLElement).style.background = 'var(--surface)')}
                   onMouseLeave={e => ((e.currentTarget as HTMLElement).style.background = 'transparent')}>
                   <span style={iconBox('var(--surface)', 'var(--border)')}>

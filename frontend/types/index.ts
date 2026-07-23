@@ -16,6 +16,13 @@ export interface University {
   created_at: string;
 }
 
+export interface ResidenceArea {
+  id: number;
+  university_name: string;
+  name: string;
+  created_at: string;
+}
+
 export interface Hostel {
   id: number;
   landlord_id: number;
@@ -42,6 +49,8 @@ export interface Hostel {
   landlord_phone?: string;
   landlord_last_active?: string | null;
   view_count?: number;
+  residence_area_id?: number | null;
+  residence_area_name?: string | null;
 }
 
 export interface Room {

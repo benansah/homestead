@@ -4,53 +4,102 @@ import Footer from '../../components/Footer';
 import Link from 'next/link';
 import { useState } from 'react';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import {CldImage} from 'next-cloudinary';
+
 
 const FAQS = [
   {
     section: 'For students',
+    id: 'students',
     items: [
-      { q: 'How do I find a hostel?', a: 'Go to Browse Hostels, use the university filter, then click any listing to see details, photos, and available rooms.' },
-      { q: 'How much does it cost?', a: "Browsing is completely free. When you want to contact a landlord, you pay a one-time GHS 50 viewing fee. This gives you the landlord's phone number." },
-      { q: 'Is my GHS 50 refundable?', a: 'Yes — if the room is no longer available, or the landlord is unreachable within 48 hours, you get a full or partial refund. See our Refund Policy for full details.' },
-      { q: "How long does it take to get the landlord's contact?", a: 'After paying, our admin verifies availability with the landlord. This typically takes a few hours on business days.' },
-      { q: 'What about group bookings?', a: 'In group bookings, each person pays GHS 50 individually — the fee is NOT split. The lead student creates the group, gets a code, and each friend joins using that code and pays their own GHS 50.' },
+      {
+        q: 'How do I find a hostel?',
+        padding: '1rem 1.25rem',
+        a: 'Go to Browse Hostels, use the university filter, then click any listing to see details, photos, and available rooms.',
+      },
+      {
+        q: 'How much does it cost?',
+        padding: '1rem 1.25rem',
+        a: 'Browsing is completely free. When you want to contact a landlord, you pay a one-time GHS 50 viewing fee. This gives you the landlord\'s phone number.',
+      },
+      {
+        q: 'Is my GHS 50 refundable?',
+        padding: '1rem 1.25rem',
+        a: 'Yes — if the room is no longer available, or the landlord is unreachable within 48 hours, you get a full or partial refund. See our Refund Policy for full details.',
+      },
+      {
+        q: 'How long does it take to get the landlord\'s contact?',
+        padding: '1rem 1.25rem',
+        a: 'After paying, our admin verifies availability with the landlord. This typically takes a few hours on business days.',
+      },
+      {
+        q: 'What about group bookings?',
+        padding: '1rem 1.25rem',
+        a: 'In group bookings, each person pays GHS 50 individually — the fee is NOT split. The lead student creates the group, gets a code, and each friend joins using that code and pays their own GHS 50.',
+      },
     ],
   },
   {
     section: 'For landlords',
     id: 'landlords',
     items: [
-      { q: 'How do I list my hostel?', a: 'Create a landlord account, go to your dashboard and click "Add full hostel" or "List a room" for a quick single-room listing. Submit for review — listings go live within 24 hours.' },
-      { q: 'Is it free to list?', a: 'Yes, listing on Homestead is completely free. We charge students a GHS 50 viewing fee, not landlords.' },
-      { q: 'How do I get notified when a student books?', a: "You'll receive a WhatsApp message from our admin team asking you to confirm availability. Once confirmed, we release your number to the student." },
+      {
+        q: 'How do I list my hostel?',
+        padding: '1rem 1.25rem',
+        a: 'Create a landlord account, go to your dashboard and click "Add full hostel" or "List a room" for a quick single-room listing. Submit for review — listings go live within 24 hours.',
+      },
+      {
+        q: 'Is it free to list?',
+        padding: '1rem 1.25rem',
+        a: 'Yes, listing on Homestead is completely free. We charge students a GHS 50 viewing fee, not landlords.',
+      },
+      {
+        q: 'How do I get notified when a student books?',
+        padding: '1rem 1.25rem',
+        a: 'You\'ll receive a WhatsApp message from our admin team asking you to confirm availability. Once confirmed, we release your number to the student.',
+      },
     ],
   },
   {
     section: 'Payments & refunds',
+    id: 'payments',
     items: [
-      { q: 'What payment methods are accepted?', a: "We accept all major cards and mobile money through Paystack, Ghana's leading payment processor." },
-      { q: 'Is my payment secure?', a: 'Yes. All payments are processed by Paystack (PCI-DSS compliant). We never store your card details.' },
-      { q: 'How long do refunds take?', a: 'Refunds are processed within 3–5 business days after approval.' },
+      {
+        q: 'What payment methods are accepted?',
+        padding: '1rem 1.25rem',
+        a: 'We accept all major cards and mobile money through Paystack, Ghana\'s leading payment processor.',
+      },
+      {
+        q: 'Is my payment secure?',
+        padding: '1rem 1.25rem',
+        a: 'Yes. All payments are processed by Paystack (PCI-DSS compliant). We never store your card details.',
+      },
+      {
+        q: 'How long do refunds take?',
+        padding: '1rem 1.25rem',
+        a: 'Refunds are processed within 3–5 business days after approval.',
+      },
     ],
   },
 ];
 
-function FAQ({ q, a }: { q: string; a: string }) {
+function FAQ({ q, a, padding }: { q: string; a: string; padding?: string }) {
   const [open, setOpen] = useState(false);
+
   return (
-    <div style={{ borderRadius: 14, border: '1px solid var(--border)', overflow: 'hidden', marginBottom: 10 }}>
+    <div className="faq-item" style={{ padding }}>
       <button
         onClick={() => setOpen(!open)}
         className="faq-btn"
-        style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '18px 24px', background: open ? 'var(--blue-light)' : 'white', border: 'none', cursor: 'pointer', textAlign: 'left', gap: 14, transition: 'background 0.15s' }}>
-        <span style={{ fontSize: 'clamp(14px,2vw,17px)', fontWeight: 700, color: '#0F172A', lineHeight: 1.4 }}>{q}</span>
+      >
+        <span>{q}</span>
         {open
-          ? <ChevronUp size={18} style={{ color: 'var(--blue)', flexShrink: 0 }} />
-          : <ChevronDown size={18} style={{ color: '#94A3B8', flexShrink: 0 }} />}
+          ? <ChevronUp size={18} />
+          : <ChevronDown size={18} />}
       </button>
       {open && (
-        <div className="faq-body" style={{ padding: '16px 24px 20px', background: 'var(--surface)' }}>
-          <p style={{ fontSize: 'clamp(14px,2vw,16px)', color: '#475569', lineHeight: 1.8 }}>{a}</p>
+        <div className="faq-body">
+          <p>{a}</p>
         </div>
       )}
     </div>
@@ -59,46 +108,53 @@ function FAQ({ q, a }: { q: string; a: string }) {
 
 export default function HelpPage() {
   return (
-    <div style={{ minHeight: '100vh', background: 'white' }}>
+    <div className="help-page">
       <Navbar />
 
-      {/* Hero */}
-      <div style={{ background: 'linear-gradient(135deg, #EBF3FF, #EDE9FE)', padding: 'clamp(44px,8vw,80px) 20px clamp(36px,7vw,64px)', textAlign: 'center' }}>
-        <div style={{ maxWidth: 680, margin: '0 auto' }}>
-          <span style={{ fontSize: 'clamp(40px,10vw,64px)', display: 'block', marginBottom: 16 }}>💬</span>
-          <h1 style={{ fontSize: 'clamp(26px,6vw,52px)', fontWeight: 900, color: '#0F172A', letterSpacing: 'clamp(-1px,-0.03em,-2px)', fontFamily: 'Georgia,serif', marginBottom: 16 }}>
-            Help &amp; FAQ
-          </h1>
-          <p style={{ fontSize: 'clamp(15px,2.5vw,20px)', color: '#475569', lineHeight: 1.7 }}>
+      <div className="help-hero">
+        <div className="help-hero-inner">
+          <span>💬</span>
+          <h1>Help &amp; FAQ</h1>
+          <p>
             Find answers to the most common questions about Homestead.
           </p>
         </div>
       </div>
 
-      {/* FAQs */}
-      <div style={{ maxWidth: 860, margin: '0 auto', padding: 'clamp(32px,5vw,64px) 20px clamp(48px,7vw,96px)' }}>
+      <div className="faq-list">
         {FAQS.map(({ section, id, items }) => (
-          <div key={section} id={id} style={{ marginBottom: 'clamp(36px,5vw,56px)' }}>
-            <h2 style={{ fontSize: 'clamp(18px,3vw,28px)', fontWeight: 900, color: '#0F172A', marginBottom: 20, fontFamily: 'Georgia,serif', paddingBottom: 14, borderBottom: '2px solid var(--border)' }}>
+          <div key={section} id={id} className="faq-section">
+            <h2 className="faq-section-title">
               {section}
             </h2>
             {items.map(({ q, a }) => <FAQ key={q} q={q} a={a} />)}
           </div>
         ))}
 
-        {/* Contact block */}
-        <div id="contact" style={{ background: '#0F172A', borderRadius: 20, padding: 'clamp(28px,5vw,48px) clamp(20px,4vw,40px)', textAlign: 'center', color: 'white' }}>
-          <h2 style={{ fontSize: 'clamp(20px,4vw,32px)', fontWeight: 900, marginBottom: 14, fontFamily: 'Georgia,serif' }}>Still need help?</h2>
-          <p style={{ fontSize: 'clamp(14px,2vw,18px)', color: 'rgba(255,255,255,0.65)', marginBottom: 28, lineHeight: 1.7 }}>
+        <div id="contact" className="contact-block">
+          <h2>STILL NEED HELP?</h2>
+          <p>
             Our team is available Monday–Friday, 8am–6pm. We typically respond within a few hours.
           </p>
-          <div style={{ display: 'flex', gap: 12, justifyContent: 'center', flexWrap: 'wrap' }}>
-            <a href="mailto:support@Homestead.com"
-              style={{ padding: '13px 24px', background: 'var(--blue)', color: 'white', borderRadius: 12, fontSize: 15, fontWeight: 700, textDecoration: 'none' }}>
+          <div className="contact-actions">
+            <a href="mailto:support@Homestead.com" className="support-link email-link">
               Email support →
             </a>
-            <Link href="/bookings"
-              style={{ padding: '13px 24px', background: 'rgba(255,255,255,0.1)', color: 'white', borderRadius: 12, fontSize: 15, fontWeight: 700, textDecoration: 'none', border: '1px solid rgba(255,255,255,0.2)' }}>
+            <Link href="/bookings" className="support-link bookings-link"
+              style={{ 
+              color: '#191970',
+              borderBottom: '3px solid #191970', 
+              textDecoration: 'none', 
+              fontWeight: 'bold',
+              transition: 'all 0.2s cubic-bezier(0.4,0,0.2,1)',
+              }}
+                onMouseOver={e => {
+                e.currentTarget.style.borderBottom = "2px solid #FFD700"; // gold on hover
+                }}
+                  onMouseOut={e => {
+                  e.currentTarget.style.borderBottom = "2px solid transparent"; // reset when not hovered
+                }}
+          >
               View my bookings
             </Link>
           </div>
@@ -106,6 +162,229 @@ export default function HelpPage() {
       </div>
 
       <Footer />
+
+      <style jsx>{`
+        .help-page {
+          min-height: 100vh;
+          display: flex;
+          flex-direction: column;
+          background-image: url("https://res.cloudinary.com/dblxopuwf/image/fetch/w_1920,h_1080,c_fill,q_auto/https://images.unsplash.com/photo-1507525428034-b723cf961d3e");
+          background-size: cover;
+          background-repeat: no-repeat;
+          background-position: center;
+          color: #111827;
+        }
+
+        .help-hero {
+          background: linear-gradient(135deg, #191970 25%, #FFD700 70%);
+          color: #fff;
+          padding: 4rem 1.5rem;
+          text-align: center;
+        }
+
+        .help-hero-inner {
+          max-width: 720px;
+          margin: 0 auto;
+          display: inline-flex;
+          flex-direction: column;
+          align-items: center;
+          gap: 1rem;
+        }
+
+        .help-hero span {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 3rem;
+          height: 3rem;
+          background: rgba(255, 255, 255, 0.15);
+          border-radius: 9999px;
+          font-size: 1.5rem;
+        }
+
+        .help-hero h1 {
+          margin: 0;
+          font-size: 2.5rem;
+        }
+
+        .help-hero p {
+          margin: 0;
+          max-width: 640px;
+          font-size: 1.05rem;
+          opacity: 0.92;
+        }
+
+        .faq-list {
+          width: 100%;
+          max-width: 960px;
+          margin: 0 auto;
+          padding: 3rem 1.5rem 4rem;
+          display: flex;
+          flex-direction: column;
+          gap: 2rem;
+        }
+
+        .faq-section,
+        .contact-block {
+          background-color:#FFFFF0; 
+          opacity: 0.8;
+          border: 1px solid rgba(148, 163, 184, 0.18);
+          border-radius: 1rem;
+          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+          padding: 1.75rem;
+        }
+
+        .faq-section {
+          display: grid;
+          gap: 1rem;
+        }
+
+        .faq-section-title {
+          margin: 0 0 1rem;
+          font-family: 'Georgia', serif;  
+          font-style: italic;              
+          font-weight: bold;
+          font-size: 1.5rem;
+          color: #111827;
+          background:#FFFFF0;
+           border: 2px solid #808000;
+          border-radius: 0.75rem;
+          padding: 0.75rem 1.25rem;
+          display: inline-block;
+        }
+
+        .faq-item {
+          border: 1px solid rgba(148, 163, 184, 0.24);
+          border-radius: 1rem;
+          background: #ffffff;
+          padding: 1rem 1.25rem;
+          transition: transform 0.2s ease, box-shadow 0.2s ease, border-color 0.2s ease;
+        }
+
+        .faq-item:hover {
+          transform: translateY(-2px);
+          box-shadow: 0 20px 40px rgba(15, 23, 42, 0.12);
+          border-color: #2563eb;
+          background: #f8fafc;
+        }
+
+        .faq-btn {
+          width: 100%;
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 1rem;
+          background: #fff;
+          border: 1px solid rgba(148, 163, 184, 0.24);
+          border-radius: 1rem;
+          padding: 1rem 1.25rem;
+          color: inherit;
+          font: inherit;
+          text-align: center;
+          cursor: pointer;
+          transition: background 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+        }
+
+        .faq-btn:hover {
+          background: #eff6ff;
+          border-color: #2563eb;
+          color: #2563eb;
+        }
+
+        .faq-item:hover .faq-btn {
+          background: #e6ff;
+        }
+
+       
+        .faq-btn span {
+          display: block;
+          flex: 1;
+          min-width: 0;
+          font-weight: 600;
+          font-size: 1rem;
+          line-height: 1.5;
+          border: 1px solid gray;
+          border-radius: 5px;
+          padding: 0.25rem 0.75rem;
+        }
+
+        .faq-body {
+          margin-top: 1rem;
+          padding-left: 0.25rem;
+          color: #4b5563;
+          font-size: 0.98rem;
+          line-height: 1.75;
+          
+        }
+
+        .faq-body p {
+          margin: 0;
+        }
+
+        a[aria-current="page"],
+        .active-link {
+          text-decoration: none;
+          border-bottom: 3px solid #2563eb;
+          padding-bottom: 0.15rem;
+        }
+
+        .contact-actions {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 1rem;
+          margin-top: 1rem;
+        }
+
+        .contact-block p {
+        font-style: italic;
+        color: #555;  
+        }
+
+      .contact-block h2{
+        font-family: 'Georgia', serif;
+        font-weight: bold;
+        color: #111827;
+      }
+
+        .support-link {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 0.85rem 1.25rem;
+          border: 1px solid rgba(37, 99, 235, 0.5);
+          border-radius: 0.75rem;
+          text-decoration: none;
+          font-weight: 600;
+          transition: background 0.2s ease, color 0.2s ease;
+        }
+
+        .email-link {
+          background: #2563eb;
+          color: #fff;
+        }
+        
+        
+
+        .email-link:hover {
+          background: #1d4ed8;
+        }
+
+        
+
+        .bookings-link:hover {
+          background: #2563eb;
+        }
+
+        @media (min-width: 768px) {
+          .help-hero {
+            padding: 5rem 2rem;
+          }
+
+          .faq-list {
+            padding: 3.5rem 2rem 4rem;
+          }
+        }
+      `}</style>
     </div>
   );
 }

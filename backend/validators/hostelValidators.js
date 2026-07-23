@@ -17,6 +17,10 @@ export const roomSchema = z.object({
   quantity:      z.number().int().positive().default(1),
 });
 
+export const roomsBulkSchema = z.object({
+  rooms: z.array(roomSchema).min(1, 'At least one room is required'),
+});
+
 export const bookingSchema = z.object({
   room_id: z.number().int().positive('Invalid room'),
 });

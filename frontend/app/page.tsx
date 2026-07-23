@@ -15,9 +15,10 @@ import { Hostel } from '../types';
 const UNIVERSITIES = [
   { name: 'University of Ghana', short: 'UG',     location: 'Legon, Accra',  emoji: '🎓' },
   { name: 'KNUST',               short: 'KNUST',  location: 'Kumasi',        emoji: '⚙️' },
-  { name: 'UCC',                 short: 'UCC',    location: 'Cape Coast',    emoji: '🌊' },
+  { name: 'UCC',                 short: 'UCC',    location: 'Cape Coast',    emoji: '📖' },
   { name: 'Univ. of Education',  short: 'UEW',    location: 'Winneba',       emoji: '📚' },
-  { name: 'Ashesi University',   short: 'Ashesi', location: 'Berekuso',      emoji: '💡' },
+  { name: 'Ashesi University',   short: 'Ashesi', location: 'Berekuso',      emoji: '💻' },
+  { name: 'University of Health and Allied Sciences', short: 'UHAS', location: 'Ho, Volta Region', emoji: '⚕️' },
 ];
 
 const STEPS = [
@@ -67,7 +68,7 @@ export default function Home() {
           {/* ── Left: copy + search ── */}
           <div>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: 6, padding: '5px 14px', borderRadius: 99, background: 'rgba(0,106,255,0.1)', fontSize: 12, fontWeight: 700, color: 'var(--blue)', marginBottom: 22 }}>
-              🇬🇭 Ghana&apos;s #1 Student Hostel Platform
+               Ghana&apos;s #1 Student Hostel Platform
             </div>
 
             <h1 style={{

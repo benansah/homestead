@@ -10,6 +10,14 @@ CREATE TABLE Users (
   created_at    TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 
+CREATE TABLE Residence_areas (
+  id              SERIAL PRIMARY KEY,
+  university_name VARCHAR(200) NOT NULL,
+  name            VARCHAR(200) NOT NULL,
+  created_at      TIMESTAMP    NOT NULL DEFAULT NOW(),
+  UNIQUE (university_name, name)
+);
+
 CREATE TABLE Hostels (
   id              SERIAL PRIMARY KEY,
   landlord_id     INT          NOT NULL REFERENCES Users(id),
@@ -24,6 +32,7 @@ CREATE TABLE Hostels (
   is_verified     BOOLEAN      NOT NULL DEFAULT FALSE,
   track           VARCHAR(5)   NOT NULL
                     CHECK (track IN ('A', 'B')),
+  residence_area_id INT REFERENCES Residence_areas(id) ON DELETE SET NULL,
   created_at      TIMESTAMP    NOT NULL DEFAULT NOW()
 );
 

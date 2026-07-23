@@ -14,6 +14,7 @@ const UNIVERSITIES = [
   'UCC',
   'University of Education',
   'Ashesi University',
+  'University of Health and Allied Sciences '
 ];
 
 interface Step {
@@ -108,41 +109,58 @@ export default function QuizPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-200 via-blue-50 to-white">
       <Navbar />
 
-      <div className="max-w-2xl mx-auto px-4 py-12">
+      <div className="max-w-2xl mx-auto px-4 py-12"  style={{
+              margin:'auto'
+            }} 
+        >
 
         {!done ? (
           <>
             {/* Progress bar */}
             <div className="mb-8">
+           
               <div className="flex items-center justify-between mb-2">
                 <span className="text-xs font-medium text-gray-500">
                   Question {step + 1} of {STEPS.length}
                 </span>
                 <span className="text-xs font-medium text-gray-500">
-                  {Math.round(((step) / STEPS.length) * 100)}% complete
+                  {Math.round(((step + 1) / STEPS.length) * 100)}% complete
                 </span>
               </div>
               <div className="h-2 bg-gray-200 rounded-full overflow-hidden">
                 <div className="h-full rounded-full transition-all duration-500"
                   style={{
-                    width: `${(step / STEPS.length) * 100}%`,
-                    background: 'var(--blue)',
+                    width: `${((step + 1) / STEPS.length) * 100}%`,
+                    backgroundColor: '#191970',
                   }} />
               </div>
             </div>
 
             {/* Question card */}
             <div className="bg-white rounded-2xl p-8 text-center"
-              style={{ border: '1px solid var(--border)' }}>
+              style={{
+                 border: '1px solid var(--border)',
+                 margin: '5% 5%',
+                 padding: '5% 5%', 
+                  justifyContent:'center',
+        alignContent:'center'
+                 }}>
 
               <p className="text-xs font-semibold uppercase tracking-widest mb-3"
-                style={{ color: 'var(--blue)' }}>
+                style={{ 
+                  color: 'var(--blue)', 
+                  fontSize: '0.75rem', 
+                  letterSpacing: '0.1em',
+                  fontStyle: 'italic',
+                  margin: '5% auto', 
+                
+                }}>
                 Find your perfect hostel
               </p>
-              <h2 className="text-xl font-bold text-gray-900 mb-8">
+              <h2 className="text-xl font-bold text-gray-900 mb-12">
                 {current.question}
               </h2>
 
@@ -158,7 +176,9 @@ export default function QuizPage() {
                       className="flex items-center gap-4 w-full px-5 py-4 rounded-xl
                                  border-2 text-left transition-all hover:border-blue-500
                                  hover:bg-blue-50 group"
-                      style={{ borderColor: 'var(--border)' }}>
+                      style={{ borderColor: 'var(--border)' 
+                               
+                      }}>
                       <span className="text-2xl">{opt.emoji}</span>
                       <span className="text-sm font-semibold text-gray-800
                                        group-hover:text-blue-700 transition-colors">
@@ -185,14 +205,14 @@ export default function QuizPage() {
         ) : (
           <>
             {/* Results */}
-            <div className="text-center mb-8">
-              <p className="text-3xl mb-3">🎉</p>
-              <h1 className="text-2xl font-bold text-gray-900 mb-2">
+            <div className="text-center mb-8" style={{padding:'auto',margin:'auto'}}>
+              <p className="text-3xl mb-3" style={{padding:'auto',margin:'1%'}}>🎉</p>
+              <h1 className="text-2xl font-bold text-gray-900 mb-2" style={{padding:'2%',margin:'auto'}}>
                 {results.length > 0
                   ? `We found ${results.length} hostel${results.length !== 1 ? 's' : ''} for you`
                   : 'No exact matches found'}
               </h1>
-              <p className="text-sm text-gray-500 mb-5">
+              <p className="text-sm text-gray-500 mb-5" style={{padding:'2%',margin:'auto'}}>
                 {results.length > 0
                   ? 'These hostels match your preferences best'
                   : 'Try adjusting your preferences or browse all hostels'}
@@ -207,7 +227,7 @@ export default function QuizPage() {
                 <button onClick={() => router.push('/')}
                   className="px-4 py-2 text-sm font-semibold rounded-lg text-white
                              hover:opacity-90 transition-opacity"
-                  style={{ background: 'var(--blue)' }}>
+                  style={{ background: 'var(--blue)',padding:'0.5%', margin:'2%' }}>
                   Browse all hostels
                 </button>
               </div>
@@ -222,7 +242,16 @@ export default function QuizPage() {
             ) : (
               <div className="text-center py-12 bg-white rounded-2xl"
                 style={{ border: '1px solid var(--border)' }}>
-                <p className="text-gray-400 text-sm">
+                <p className="text-center text-gray-400 text-sm transition-colors hover:text-gray-600" style={{
+                   color: 'var(--text-secondary)',
+                   padding: 'auto',
+                   backgroundColor: 'var(--background)',
+                   borderRadius: '10px',
+                   border: '1px solid var(--blue)',
+                   fontSize: '0.875rem',
+                   lineHeight: '1.25rem',
+                   margin: 'auto',
+                }}>
                   No hostels matched all your criteria.
                   Try browsing with fewer filters.
                 </p>

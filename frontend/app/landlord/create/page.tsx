@@ -160,29 +160,43 @@ export default function CreateHostel() {
       <div className="min-h-screen bg-gray-50">
         <Navbar />
 
-        <div className="max-w-2xl mx-auto px-4 py-8">
+        <div className="max-w-2xl mx-auto px-4 py-8" style={{
+          backgroundImage:'linear gradient(white, blue)',
+          margin:'auto',
+          padding:'5%',
+        
+        }}>
 
           {/* Back */}
           <Link href="/landlord"
             className="flex items-center gap-1.5 text-sm text-gray-500
-                       hover:text-gray-800 mb-6 transition-colors">
+                       hover:text-gray-800 mb-6 transition-colors"
+            style={{
+              margin:'auto'
+            }}            >
             <ArrowLeft size={15} /> Back to dashboard
           </Link>
 
-          <h1 className="text-2xl font-bold text-gray-900 mb-2">Add your hostel</h1>
-          <p className="text-sm text-gray-500 mb-6">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2"  style={{
+              margin:'2%'
+            }} >Add your hostel</h1>
+          <p className="text-sm text-gray-500 mb-6"  style={{
+              margin:'auto'
+            }} >
             Fill in the details below. Your listing will go live after admin approval.
           </p>
 
           {/* Progress steps */}
-          <div className="flex items-center gap-2 mb-8">
+          <div className="flex items-center gap-2 mb-8"  style={{
+              margin:'4%'
+            }} >
             {[
               { n: 1, label: 'Hostel details' },
               { n: 2, label: 'Add rooms' },
               { n: 3, label: 'Review & submit' },
             ].map(({ n, label }) => (
-              <div key={n} className="flex items-center gap-2 flex-1">
-                <div className="flex items-center gap-2">
+              <div key={n} className="flex items-center gap-2 flex-1" >
+                <div className="flex items-center gap-2" >
                   <div className="w-7 h-7 rounded-full flex items-center justify-center
                                   text-xs font-bold transition-all"
                     style={{
@@ -208,67 +222,167 @@ export default function CreateHostel() {
           {/* ── STEP 1: Hostel details ── */}
           {step === 1 && (
             <div className="bg-white rounded-2xl p-6"
-              style={{ border: '1px solid var(--border)' }}>
-              <h2 className="text-lg font-bold text-gray-900 mb-5">Hostel details</h2>
-              <div className="space-y-4">
+              style={{ 
+                border: '1px solid var(--border)',
+                padding:'3%'
+                }}>
+              <h2 className="text-lg font-bold text-gray-900 mb-5"  style={{
+              margin:'2%'
+            }} >Hostel details</h2>
+              <div className="space-y-4" >
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Hostel name *
-                  </label>
-                  <input value={hostel.hostel_name}
-                    onChange={e => setH('hostel_name', e.target.value)}
-                    placeholder="e.g. Nana Ama Hostel"
-                    className={inputClass} style={inputStyle} />
-                </div>
+                <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>
+    Hostel Information
+  </legend>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    University *
-                  </label>
-                  <select value={hostel.university}
-                    onChange={e => setH('university', e.target.value)}
-                    className={inputClass} style={inputStyle}>
-                    <option value="">Select university</option>
-                    {universities.map(u => <option key={u.id} value={u.name}>{u.name}</option>)}
-                  </select>
-                </div>
+  <div style={{ alignContent: 'center', padding: '3%' }}>
+    {/* <label
+      className="block text-sm font-medium text-gray-700 mb-1"
+      style={{ margin: '2%' }}
+    >
+      Hostel name *
+    </label> */}
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Full address *
-                  </label>
-                  <input value={hostel.hostel_address}
-                    onChange={e => setH('hostel_address', e.target.value)}
-                    placeholder="e.g. Legon Road, East Legon, Accra"
-                    className={inputClass} style={inputStyle} />
-                </div>
+    <input
+      value={hostel.hostel_name}
+      onChange={e => setH('hostel_name', e.target.value)}
+      placeholder="e.g. Nana Ama Hostel"
+      className={inputClass}
+      style={inputStyle}
+    />
+  </div>
+</fieldset>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Residence area
-                  </label>
-                  <select value={hostel.residence_area_id}
-                    onChange={e => setH('residence_area_id', e.target.value)}
-                    className={inputClass} style={inputStyle}>
-                    <option value="">Select area</option>
-                    {residenceAreas.map(area => <option key={area.id} value={area.id}>{area.name} · {area.university_name}</option>)}
-                  </select>
-                </div>
 
+                <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>
+    University Information
+  </legend>
+
+  <div style={{ padding: '3%' }}>
+    {/* <label
+      className="block text-sm font-medium text-gray-700 mb-1"
+      style={{ margin: '2%' }}
+    >
+      University *
+    </label> */}
+
+    <select
+      value={hostel.university}
+      onChange={e => setH('university', e.target.value)}
+      className={inputClass}
+      style={inputStyle}
+    >
+      <option value="">Select university</option>
+      {universities.map(u => (
+        <option key={u.id} value={u.name}>
+          {u.name}
+        </option>
+      ))}
+    </select>
+  </div>
+</fieldset>
+
+
+                <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>
+    Full address *
+  </legend>
+
+  <div style={{ padding: '3%' }}>
+    {/* <label
+      className="block text-sm font-medium text-gray-700 mb-1"
+      style={{ margin: '2%' }}
+    >
+      Full address *
+    </label> */}
+
+    <input
+      value={hostel.hostel_address}
+      onChange={e => setH('hostel_address', e.target.value)}
+      placeholder="e.g. Legon Road, East Legon, Accra"
+      className={inputClass}
+      style={inputStyle}
+    />
+  </div>
+</fieldset>
+
+
+
+              <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>
+    Residence area
+  </legend>
+
+  <div style={{ padding: '3%' }}>
+    {/* <label
+      className="block text-sm font-medium text-gray-700 mb-1"
+      style={{ margin: '2%' }}
+    >
+      Residence area
+    </label> */}
+
+    <select
+      value={hostel.residence_area_id}
+      onChange={e => setH('residence_area_id', e.target.value)}
+      className={inputClass}
+      style={inputStyle}
+    >
+      <option value="">Select area</option>
+      {residenceAreas.map(area => (
+        <option key={area.id} value={area.id}>
+          {area.name} · {area.university_name}
+        </option>
+      ))}
+    </select>
+  </div>
+</fieldset>
+
+              <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>Description</legend>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
+                  {/* <label className="block text-sm font-medium text-gray-700 mb-1"  style={{ */}
+              {/* margin:'2%' */}
+            {/* }} > */}
+                    {/* Description */}
+                  {/* </label> */}
                   <textarea value={hostel.description}
                     onChange={e => setH('description', e.target.value)}
                     placeholder="Describe your hostel — location benefits, amenities, security..."
                     rows={3}
                     className={`${inputClass} resize-none`} style={inputStyle} />
                 </div>
-
+              </fieldset>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                  <label className="block text-sm font-medium text-gray-700 mb-2"  style={{
+              margin:'2%'
+            }} >
                     Hostel location on map
                     <span className="text-xs text-gray-400 ml-2 font-normal">
                       (click the map or drag the pin to your exact location)
@@ -284,8 +398,12 @@ export default function CreateHostel() {
                   />
                 </div>
 
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                <div  style={{
+              margin:'2%'
+            }} >
+                  <label className="block text-sm font-medium text-gray-700 mb-2"  style={{
+              margin:'2%'
+            }} >
                     Listing type
                   </label>
                   <div className="grid grid-cols-2 gap-3">
@@ -333,7 +451,7 @@ export default function CreateHostel() {
                 <div key={i} className="bg-white rounded-2xl p-5"
                   style={{ border: '1px solid var(--border)' }}>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="font-bold text-gray-900">Room {i + 1}</h3>
+                    <h3 className="font-bold text-gray-900" style={{margin:'2%'}}>Room {i + 1}</h3>
                     {rooms.length > 1 && (
                       <button onClick={() => removeRoom(i)}
                         className="p-1.5 rounded-lg hover:bg-red-50 text-gray-400
@@ -343,11 +461,22 @@ export default function CreateHostel() {
                     )}
                   </div>
 
-                  <div className="grid grid-cols-2 gap-3">
+                  <div className="grid grid-cols-2 gap-3" style={{
+                    padding:'3%'
+                  }}>
                     <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                       <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>Room type *</legend>
+                      {/* <label className="block text-sm font-medium text-gray-700 mb-1"  style={{
+              margin:'2%'
+            }} >
                         Room type *
-                      </label>
+                      </label> */}
                       <select value={room.room_type}
                         onChange={e => setRoom(i, 'room_type', e.target.value)}
                         className={inputClass} style={inputStyle}>
@@ -357,41 +486,78 @@ export default function CreateHostel() {
                         <option value="Shared Room">Shared Room</option>
                         <option value="Chamber and Hall">Chamber and Hall</option>
                         <option value="Single Room">Single Room</option>
-                      </select>
+                      </select></fieldset>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                       <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>Price per year (GHS) *</legend>
+                      {/* <label className="block text-sm font-medium text-gray-700 mb-1"  style={{
+              margin:'2%'
+            }} >
                         Price per year (GHS) *
-                      </label>
+                      </label> */}
                       <input type="number" value={room.price}
                         onChange={e => setRoom(i, 'price', e.target.value)}
                         placeholder="e.g. 2500"
-                        className={inputClass} style={inputStyle} />
+                        className={inputClass} style={inputStyle} /> </fieldset>
                     </div>
 
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                    <div> 
+                       <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>Number of rooms</legend>
+                      {/* <label className="block text-sm font-medium text-gray-700 mb-1"  style={{
+              margin:'2%'
+            }} >
                         Number of rooms
-                      </label>
+                      </label> */}
                       <input type="number" min="1" value={room.quantity}
                         onChange={e => setRoom(i, 'quantity', e.target.value)}
-                        className={inputClass} style={inputStyle} />
+                        className={inputClass} style={inputStyle} /></fieldset>
                     </div>
 
                     <div>
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                       <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>Max occupants</legend>
+                      {/* <label className="block text-sm font-medium text-gray-700 mb-1"  style={{
+              margin:'2%'
+            }} >
                         Max occupants
-                      </label>
+                      </label> */}
                       <input type="number" min="1" value={room.max_occupants}
                         onChange={e => setRoom(i, 'max_occupants', e.target.value)}
-                        className={inputClass} style={inputStyle} />
-                    </div>
+                        className={inputClass} style={inputStyle} /></fieldset>
+                    </div> 
+                    
 
                     <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                       <fieldset style={{ border: '1px solid #ddd', borderRadius: '8px', padding: '3%' }}>
+  <legend style={{
+    fontWeight: 'bold',
+    fontSize: '14px',
+    color: '#006aff',
+    padding: '0 8px'
+  }}>Gender policy</legend>
+                      {/* <label className="block text-sm font-medium text-gray-700 mb-1"  style={{
+              margin:'2%'
+            }} >
                         Gender policy
-                      </label>
+                      </label> */}
                       <div className="flex gap-2">
                         {['Male', 'Female', 'Both'].map(g => (
                           <button key={g} type="button"
@@ -406,12 +572,14 @@ export default function CreateHostel() {
                             {g === 'Both' ? 'Mixed' : `${g} only`}
                           </button>
                         ))}
-                      </div>
+                      </div> </fieldset>
                     </div>
 
                     {/* ── Image upload ── */}
                     <div className="col-span-2">
-                      <label className="block text-sm font-medium text-gray-700 mb-1">
+                      <label className="block text-sm font-medium text-gray-700 mb-1"  style={{
+              margin:'2%'
+            }} >
                         Room photos
                         <span className="text-xs text-gray-400 ml-1 font-normal">
                           (up to 6 photos)
@@ -518,7 +686,7 @@ export default function CreateHostel() {
 
               {/* Hostel summary */}
               <div className="bg-white rounded-2xl p-5"
-                style={{ border: '1px solid var(--border)' }}>
+                style={{ border: '1px solid var(--border)', padding:'3%' }}>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-bold text-gray-900">Hostel details</h2>
                   <button onClick={() => setStep(1)}
@@ -526,7 +694,7 @@ export default function CreateHostel() {
                     Edit
                   </button>
                 </div>
-                <div className="space-y-2 text-sm">
+                <div className="space-y-2 text-sm" style={{padding:'3%'}}>
                   {[
                     { label: 'Name',       value: hostel.hostel_name },
                     { label: 'University', value: hostel.university },
@@ -545,7 +713,7 @@ export default function CreateHostel() {
 
               {/* Rooms summary */}
               <div className="bg-white rounded-2xl p-5"
-                style={{ border: '1px solid var(--border)' }}>
+                style={{ border: '1px solid var(--border)', margin:"2%", padding:'2%'  }}>
                 <div className="flex items-center justify-between mb-3">
                   <h2 className="font-bold text-gray-900">Rooms ({rooms.length})</h2>
                   <button onClick={() => setStep(2)}
@@ -579,10 +747,10 @@ export default function CreateHostel() {
               {/* What happens next */}
               <div className="rounded-xl p-4"
                 style={{ background: '#F0F7FF', border: '1px solid #BFDBFE' }}>
-                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--blue)' }}>
+                <p className="text-sm font-semibold mb-2" style={{ color: 'var(--blue)', padding:'2%' }}>
                   What happens after you submit?
                 </p>
-                <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside">
+                <ol className="text-xs text-gray-600 space-y-1 list-decimal list-inside" style={{padding:'2%'}}>
                   <li>Your listing goes to admin for review</li>
                   <li>Admin verifies your hostel details</li>
                   <li>Once approved, students can find and book viewings</li>
@@ -594,14 +762,14 @@ export default function CreateHostel() {
                 <button onClick={() => setStep(2)}
                   className="flex-1 py-3 rounded-xl border font-semibold text-sm
                              text-gray-700 hover:bg-gray-50 transition-colors"
-                  style={{ borderColor: 'var(--border)' }}>
+                  style={{ borderColor: 'var(--border)', background:'var(--blue)', margin:'3%',color:'white'}}>
                   Back
                 </button>
                 <button onClick={handleSubmit} disabled={loading}
                   className="flex-1 py-3 rounded-xl text-white font-semibold text-sm
                              hover:opacity-90 transition-opacity disabled:opacity-60
                              flex items-center justify-center gap-2"
-                  style={{ background: 'var(--blue)' }}>
+                  style={{ background: 'var(--blue)', margin:'3%',fontStyle:'italic' }}>
                   {loading && <Loader2 size={16} className="animate-spin" />}
                   {loading ? 'Submitting...' : 'Submit for approval'}
                 </button>
